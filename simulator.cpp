@@ -1,6 +1,8 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <array>
+#include <string>
 #include <cmath>
 
 using namespace std;
@@ -9,6 +11,11 @@ void decode();
 void fetch();
 int binaryToDecimal(vector<bool> binaryVector);
 
+using namespace std;
+
+void readFile();
+
+string filename = "testfile.txt";
 vector<std::array<bool, 32>> memory;
 array<bool, 32> PI;
 int CI = 0;
@@ -53,4 +60,32 @@ int binaryToDecimal(vector<bool> binaryVector) {
 		decimal += binaryVector[i] * pow(2, (int)i);
 	}
 	return decimal;
+}
+
+// read file, store instructions in memory
+void readFile() {
+    string line;
+    array<bool, 32> memoryLine;
+    ifstream file;
+    file.open(filename);
+    if (!file) {
+        // error opening file
+    }
+    while(getline(file, line) && memory.size() <= 32) {
+        if (line.size() == 32) {
+            // convert string to bool array
+            for (size_t i = 0; i < line.length(); i++) {
+                if (line[i] == '0') {
+                    memoryLine[i] = 0;
+                } else if (line[i] == '1') {
+                    memoryLine[i] = 1;
+                } else {
+                    cout << "input file not in binary" << endl;
+                }
+            }
+            // push instruction to memory
+            memory.push_back(memoryLine);
+        }
+    }
+    file.close();
 }
