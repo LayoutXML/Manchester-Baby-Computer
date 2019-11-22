@@ -9,18 +9,17 @@ using namespace std;
 
 void decode();
 void fetch();
+void execute();
 int binaryToDecimal(vector<bool> binaryVector);
-
-using namespace std;
-
 void readFile();
 
 string filename = "testfile.txt";
 vector<std::array<bool, 32>> memory;
 array<bool, 32> PI;
 int CI = 0;
-int opcode;
-int operand;
+int opcode = 0;
+int operand = 0;
+int accumulator = 0;
 
 int main() {
 	readFile();
@@ -29,7 +28,7 @@ int main() {
 		CI++;
 		fetch();
 		decode();
-		// execute();
+		execute();
 		// display();
 	}
 	return 0;
@@ -73,7 +72,7 @@ void readFile() {
     }
     while(getline(file, line) && memory.size() <= 32) {
         if (line.size() == 32) {
-            // convert string to bool array
+            // convert string to bool arraye
             for (size_t i = 0; i < line.length(); i++) {
                 if (line[i] == '0') {
                     memoryLine[i] = 0;
@@ -88,4 +87,43 @@ void readFile() {
         }
     }
     file.close();
+}
+
+void execute(int operand, int opcode) {
+    switch (opcode)
+    {
+    case 0:
+        // set CI to content of memeory location
+        CI = memory[operand];
+        break;
+    case 1:
+        // add content at memory location to CI
+        CI = CI + memory[operand];
+        break;
+    case 2:
+        // load accumulator with negavive content at memory location
+        accumulator = -memory[operand];
+        break;
+    case 3:
+        // add accumulator content to memory location
+        memory[operand] = accumulator;
+        break;
+    case 4:
+        // subtract content at memory location from accumulator
+        accumulator = accumulator - memory[operand];
+        break;
+    case 5:
+        // !HELP! not sure what this should do
+        break;
+    case 6:
+        // increment CI if accumulator is negative
+        if (accumulator < 0)
+            CI++;
+        break;
+    case 7:
+        // set off stop lamp and half machine
+        break;
+    default:
+        break;
+    }
 }
