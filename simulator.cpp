@@ -25,7 +25,7 @@ int operand;
 int main() {
 	readFile();
 
-	while (true) {
+	while (CI < 31 && CI < (int)memory.size() - 1) {
 		CI++;
 		fetch();
 		decode();
