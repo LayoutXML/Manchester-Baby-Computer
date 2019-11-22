@@ -3,6 +3,13 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <cmath>
+
+using namespace std;
+
+void decode();
+void fetch();
+int binaryToDecimal(vector<bool> binaryVector);
 
 using namespace std;
 
@@ -10,22 +17,49 @@ void readFile();
 
 string filename = "testfile.txt";
 vector<std::array<bool, 32>> memory;
+array<bool, 32> PI;
+int CI = 0;
+int opcode;
+int operand;
 
 int main() {
-	array<bool, 32> test;
-	//memory.push_back(test);
-	//cout << memory.size() << endl;
-	
-    readFile();
-    cout << memory.size() << endl;
+	readFile();
 
-    for (size_t i = 0; i < memory.size(); i++) {
-        for (int k = 0; k < 32; k++) {
-            cout << memory[i][k];
-        }
-        cout << endl;
-    }
-    return 0;
+	while (true) {
+		CI++;
+		fetch();
+		decode();
+		// execute();
+		// display();
+	}
+	return 0;
+}
+
+void fetch() {
+	PI = memory[CI];
+}
+
+void decode() {
+	vector<bool> operandBinary;
+	vector<bool> opcodeBinary;
+	int i = 0;
+	for (i; i < 13; i++) {
+		operandBinary.push_back(PI[i]);
+	}
+	for (i; i < 16; i++) {
+		opcodeBinary.push_back(PI[i]);
+	}
+	operand = binaryToDecimal(operandBinary);
+	opcode = binaryToDecimal(opcodeBinary);
+}
+
+//Converting binary number (stored in a vector in big endian format) to decimal number
+int binaryToDecimal(vector<bool> binaryVector) {
+	int decimal = 0;
+	for (size_t i = 0; i < binaryVector.size(); i++) {
+		decimal += binaryVector[i] * pow(2, (int)i);
+	}
+	return decimal;
 }
 
 // read file, store instructions in memory
@@ -33,7 +67,7 @@ void readFile() {
     string line;
     array<bool, 32> memoryLine;
     ifstream file;
-    file.open("testfile.txt");
+    file.open(filename);
     if (!file) {
         // error opening file
     }
