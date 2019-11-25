@@ -12,6 +12,7 @@ void fetch();
 int binaryToDecimal(vector<bool> binaryVector);
 void readFile();
 void display();
+void displayMemoryLine(array<bool, 32> memoryLine);
 
 string filename = "testfile.txt";
 vector<std::array<bool, 32>> memory;
@@ -97,38 +98,29 @@ void display() {
     cout << "Memory:" << endl;
     for (size_t i = 0; i < memory.size(); i++) {
         cout << i << ": ";
-        for (size_t k = 0; k < memory[i].size(); k++) {
-            // if bit is "true"
-            if (memory[i][k]) {
-                cout << trueChar;
-            } else {
-                cout << falseChar;
-            }
-            cout << " ";
-        }
+        displayMemoryLine(memory[i]);
         cout << endl;
     }
     cout << "CI: " << CI << endl;
     cout << "PI: " << endl;
-    for (size_t i = 0; i < PI.size(); i++) {
-        // if bit is "true"
-        if (PI[i]) {
-            cout << trueChar;
-        } else {
-            cout << falseChar;
-        }
-        cout << " ";
-    }
+    displayMemoryLine(PI);
     cout << endl;
     cout << "Accumulator: " << endl;
-    for (size_t i = 0; i < accumulator.size(); i++) {
+    displayMemoryLine(accumulator);
+    cout << endl;
+}
+
+void displayMemoryLine(array<bool, 32> memoryLine) {
+    char trueChar = '1';
+    char falseChar = '0';
+    for (size_t i = 0; i < memoryLine.size(); i++) {
         // if bit is "true"
-        if (accumulator[i]) {
+        if (memoryLine[i]) {
             cout << trueChar;
         } else {
             cout << falseChar;
         }
         cout << " ";
     }
-    cout << endl;
 }
+
