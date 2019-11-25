@@ -10,14 +10,13 @@ using namespace std;
 void decode();
 void fetch();
 int binaryToDecimal(vector<bool> binaryVector);
-
-using namespace std;
-
 void readFile();
+void display();
 
 string filename = "testfile.txt";
 vector<std::array<bool, 32>> memory;
 array<bool, 32> PI;
+array<bool, 32> accumulator;
 int CI = 0;
 int opcode;
 int operand;
@@ -30,7 +29,7 @@ int main() {
 		fetch();
 		decode();
 		// execute();
-		// display();
+		display();
 	}
 	return 0;
 }
@@ -88,4 +87,48 @@ void readFile() {
         }
     }
     file.close();
+}
+
+// Display memory, CI, PI and accumulator
+void display() {
+    char trueChar = '1';
+    char falseChar = '0';
+    // Memory display
+    cout << "Memory:" << endl;
+    for (size_t i = 0; i < memory.size(); i++) {
+        cout << i << ": ";
+        for (size_t k = 0; k < memory[i].size(); k++) {
+            // if bit is "true"
+            if (memory[i][k]) {
+                cout << trueChar;
+            } else {
+                cout << falseChar;
+            }
+            cout << " ";
+        }
+        cout << endl;
+    }
+    cout << "CI: " << CI << endl;
+    cout << "PI: " << endl;
+    for (size_t i = 0; i < PI.size(); i++) {
+        // if bit is "true"
+        if (PI[i]) {
+            cout << trueChar;
+        } else {
+            cout << falseChar;
+        }
+        cout << " ";
+    }
+    cout << endl;
+    cout << "Accumulator: " << endl;
+    for (size_t i = 0; i < accumulator.size(); i++) {
+        // if bit is "true"
+        if (accumulator[i]) {
+            cout << trueChar;
+        } else {
+            cout << falseChar;
+        }
+        cout << " ";
+    }
+    cout << endl;
 }
