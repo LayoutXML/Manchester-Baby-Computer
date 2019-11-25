@@ -1,27 +1,36 @@
+/*
+	Names: Calum Logan, Emilija Budryte, Rokas Jankunas, Jokubas Butkus, & Momchil Badzhev
+	assembler.cpp written by: Calum Logan, Emilija Budryte
+	Matriculation Numbers: 180013466, ###ADD MATRICULATION NUMBERS
+	Module Code: AC21008
+*/
+
 #include <iostream>
 #include <vector>
 #include <fstream>
 
 using namespace std;
 
-struct Symbol {
+struct Symbol {		//Symbol structure for the Symbol table - each symbol contains a label and a memory address
 	string label;
 	string address;
 };
 
-vector <Symbol> symbolTable;
+vector <Symbol> symbolTable;	//symbol table we make use of whenever a symbol is seen in the assembly code
 vector <int> outputBuffer; //binary
 
 //variables
-string inputFile = "input.txt";
-string outputFile = "output.txt";
-bool started = false;
-bool ended = false;
-bool finishFirstPass = false;
+string inputFile = "input.txt";	//Assembly language text file is read in
+string outputFile = "output.txt";	//Machine code (binary) text file is produced
+bool started = false;	//Boolean to flag the START: keyword for the first pass
+bool ended = false;		//Boolean to flag the END: keyword for the first pass
+bool finishFirstPass = false;	//Boolean to mark when the first pass has ended
 
 //functions
-bool processFile();
-void display();
+bool processFile();	//goes through the input file
+bool firstPass();	//Parses the file once, saving symbols to the symbol table
+bool secondPass();	//Second pass will save variable information at the end of the program
+void display();	//displays every symbol in the symbol table
 
 int main() {
 	
@@ -38,12 +47,19 @@ int main() {
 
 bool processFile() 
 {
-	string line;
-	string label = "";
-	string address = "";
-	bool readLabel = false;
-	bool readAddress = false;
+	firstPass();
+	secondPass();
+}
 
+bool firstPass()
+{
+	string line;	//each line of the input file
+	string label = "";	//the label of a symbol read in the file
+	string address = "";	//the address of a symbol read in the file
+	bool readLabel = false;	//boolean which tells us a label is being read
+	bool readAddress = false;	//boolean that tells us an address is being read
+
+	//if we can't open the file, simply print an error message
     ifstream file (inputFile);
     if (!file)
   	{
@@ -52,71 +68,72 @@ bool processFile()
     }
     else
     {
-        while (getline(file, line))
+        while (getline(file, line))	//while a line can be read, we go on to the next line
         {
-        	label = "";
+        	//reset relevant variables
+        	label = "";	
         	address = "";
         	readLabel = false;
         	readAddress = false;
 
-        	for (int i = 0; i < (int)line.length(); i++)
+        	for (int i = 0; i < (int)line.length(); i++)	//for each character in the line
         	{
-	        	if (line[i] == ';')
+	        	if (line[i] == ';')	//once we hit a ';' (end of line) we skip as we can ignore anything next to it on the same line as a comment
 	        	{
 	        		break;
 	        	}
-	        	if (line[i] == ' ')
+	        	if (line[i] == ' ')	//if we read a space:
 	        	{
-	        		if (label != "")
+	        		if (label != "")	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
 	        		{
 	        			readLabel = true;
 	        		}
-	        		if (address != "")
+	        		if (address != "")	//if the address variable for this line isn't empty (contains an address), we have already read the address os we set its boolean to true
 	        		{
 	        			readAddress = true;
 	        		}
 	        		else 
 	        		{
-	        			continue;
+	        			continue;	//otherwise if we read a space but already have a label and address, we just continue until we reach the end line character.
 	        		}
 	        	}
-	        	else
+	        	else	//if we read a character that is anything but a space or an end-of-line character, we need to save it somewhere 
 	        	{ 
-	        		if (readLabel == false && ended == false)
+	        		if (readLabel == false && ended == false)	//if we haven't read any labels and havent reached the end of the program, we add currently read characters to the label variable
 	        		{
-	        			label += line[i];
+	        			label += line[i];	//add the current character to the label string
 
-	        			if (label == "START:")
+	        			if (label == "START:")	//if we read the 'START:' flag, we set the started boolean to true and reset the label string then move on to the next character.
 	        			{
 	        				started = true;
 	        				label = "";
 	        				continue;
 	        			}
-	        			else if (label == "END:")
+	        			else if (label == "END:")	//Same as above for the end.
 	        			{
 	        				ended = true;
 	        				label = "";
 	        			}
 	        		}
-	        		else if (readAddress == false && ended == false)
+	        		else if (readAddress == false && ended == false)	// if we haven't read an address and haven't reached the end of the program, we add currently read characters to the address variable
 	        		{
 	        			address += line[i];
 	        		}
 	        	}
 	        }
-
-	       	if (label != "" && address != "" && started == true)
+	        //At this point, we should have a label and address to save to the Symbol table
+	       	if (label != "" && address != "" && started == true)	// If we have information ready to save and we're still in the program section for the first pass
 	       	{
-	       		if ( ended != true)
+	       		if ( ended != true)	//And we haven't reached the end of the program yet
 	       		{
-					Symbol newSymbol;
+					Symbol newSymbol;	//create a new symbol, set its variables and push on to the symbol table
 					newSymbol.label = label;
 					newSymbol.address = address;
 					symbolTable.push_back(newSymbol);
 	       		}
-	       		else
+	       		else	//If we have reached the end of the program for the first pass, we'll only be saving the 'STP' label to make the program stop
 	       		{
-	       			address = "";
+	       			address = "";	
 	       			Symbol newSymbol;
 					newSymbol.label = label;
 					newSymbol.address = address;
@@ -126,20 +143,25 @@ bool processFile()
 	       		//cout << "ADDRESS - " << address << endl;
 	       	}
 
-	       	if (started == true && ended == true)
+	       	if (started == true && ended == true)	//If we have reached the end section of the program, we break out of the loop. This is the end of the first pass.
 	       	{
 	       		break;
 	       	}
 
 	    }
     }
-    file.close();
+    file.close();	//Close the file at the end of the loop
+	return true;
+}
+
+bool  secondPass()
+{
 	return true;
 }
 
 void display()
 {
-	for (int i = 0; i < (int)symbolTable.size(); i++)
+	for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
 	{
 		cout << "Label: " << symbolTable.at(i).label << endl;
 		cout << "Address: " << symbolTable.at(i).address << endl;
