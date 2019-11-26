@@ -12,10 +12,13 @@ void fetch();
 void execute();
 int binaryToDecimal(vector<bool> binaryVector);
 void readFile();
+void display();
+void displayMemoryLine(array<bool, 32> memoryLine);
 
 string filename = "testfile.txt";
 vector<std::array<bool, 32>> memory;
 array<bool, 32> PI;
+array<bool, 32> accumulator;
 int CI = 0;
 int opcode = 0;
 int operand = 0;
@@ -29,7 +32,7 @@ int main() {
 		fetch();
 		decode();
 		execute();
-		// display();
+		display();
 	}
 	return 0;
 }
@@ -87,6 +90,44 @@ void readFile() {
         }
     }
     file.close();
+}
+
+// Display memory, CI, PI and accumulator
+void display() {
+    char trueChar = '1';
+    char falseChar = '0';
+    // Memory display
+    cout << "Memory:" << endl;
+    for (size_t i = 0; i < memory.size(); i++) {
+        cout << i << ": ";
+        displayMemoryLine(memory[i]);
+        cout << endl;
+    }
+    cout << "CI: " << CI << endl;
+    cout << "PI: " << endl;
+    displayMemoryLine(PI);
+    cout << endl;
+    cout << "Accumulator: " << endl;
+    displayMemoryLine(accumulator);
+    cout << endl;
+}
+
+void displayMemoryLine(array<bool, 32> memoryLine) {
+    char trueChar = '1';
+    char falseChar = '0';
+    for (int i = 0; i < (int)memoryLine.size(); i++) {
+        // for visibility
+        if ( i >= 4 && i % 4 == 0) {
+            cout << " ";
+        }
+        // if bit is "true"
+        if (memoryLine[i]) {
+            cout << trueChar;
+        } else {
+            cout << falseChar;
+        }
+        cout << " ";
+    }
 }
 
 void execute(int operand, int opcode) {
