@@ -4,6 +4,7 @@
 #include <array>
 #include <string>
 #include <cmath>
+#include <unistd.h>
 
 using namespace std;
 
@@ -11,6 +12,8 @@ void decode();
 void fetch();
 void execute();
 int binaryToDecimal(vector<bool> binaryVector);
+int binaryToDecimalArray(array<bool, 32> array);
+array<bool, 32> decimalToBinaryArray(int decimal);
 void readFile();
 void display();
 void displayMemoryLine(array<bool, 32> memoryLine);
@@ -22,17 +25,20 @@ array<bool, 32> accumulator;
 int CI = 0;
 int opcode = 0;
 int operand = 0;
-int accumulator = 0;
+bool stop = false;
 
 int main() {
 	readFile();
-
 	while (CI < 31 && CI < (int)memory.size() - 1) {
 		CI++;
 		fetch();
 		decode();
 		execute();
 		display();
+		if (stop) {
+			return 0;
+		}
+		sleep(10);
 	}
 	return 0;
 }
@@ -64,19 +70,49 @@ int binaryToDecimal(vector<bool> binaryVector) {
 	return decimal;
 }
 
+//Converting binary number (stored in a vector in big endian format) to decimal number
+int binaryToDecimalArray(array<bool, 32> array) {
+	int decimal = 0;
+	for (size_t i = 0; i < array.size() - 1; i++) {
+		decimal += array[i] * pow(2, (int)i);
+	}
+	if (array[array.size() - 1]) {
+		decimal *= -1;
+	}
+	return decimal;
+}
+
+array<bool, 32> decimalToBinaryArray(int decimal) {
+	bool isNegative = decimal < 0;
+	array<bool, 32> array;
+	if (isNegative) {
+		decimal *= -1;
+	}
+	for (int i = 30; i >= 0; i--) {
+		if (decimal < pow(2, i)) {
+			array[i] = false;
+		} else {
+			array[i] = true;
+			decimal -= pow(2, i);
+		}
+	}
+	array[31] = isNegative;
+	return array;
+}
+
 // read file, store instructions in memory
 void readFile() {
     string line;
     array<bool, 32> memoryLine;
-    ifstream file;
-    file.open(filename);
+    ifstream file(filename);
     if (!file) {
         // error opening file
+        cout << "File error" << endl;
     }
     while(getline(file, line) && memory.size() <= 32) {
-        if (line.size() == 32) {
+        if (line.size() == 33) {
             // convert string to bool arraye
-            for (size_t i = 0; i < line.length(); i++) {
+            for (size_t i = 0; i < line.length() - 1; i++) {
                 if (line[i] == '0') {
                     memoryLine[i] = 0;
                 } else if (line[i] == '1') {
@@ -97,6 +133,7 @@ void display() {
     char trueChar = '1';
     char falseChar = '0';
     // Memory display
+    cout << endl;
     cout << "Memory:" << endl;
     for (size_t i = 0; i < memory.size(); i++) {
         cout << i << ": ";
@@ -130,42 +167,52 @@ void displayMemoryLine(array<bool, 32> memoryLine) {
     }
 }
 
-void execute(int operand, int opcode) {
-    switch (opcode)
-    {
-    case 0:
-        // set CI to content of memeory location
-        CI = memory[operand];
-        break;
-    case 1:
-        // add content at memory location to CI
-        CI = CI + memory[operand];
-        break;
-    case 2:
-        // load accumulator with negavive content at memory location
-        accumulator = -memory[operand];
-        break;
-    case 3:
-        // add accumulator content to memory location
-        memory[operand] = accumulator;
-        break;
-    case 4:
-        // subtract content at memory location from accumulator
-        accumulator = accumulator - memory[operand];
-        break;
-    case 5:
-        // exactly the same as case 4
-        accumulator = accumulator - memory[operand];
-        break;
-    case 6:
-        // increment CI if accumulator is negative
-        if (accumulator < 0)
-            CI++;
-        break;
-    case 7:
-        // set off stop lamp and half machine
-        break;
-    default:
-        break;
+void execute() {
+	cout << endl;
+    switch (opcode) {
+	    case 0:
+	        // set CI to content of memeory location
+	        CI = binaryToDecimalArray(memory[operand]);
+	        cout << "JMP" << endl;
+	        break;
+	    case 1:
+	        // add content at memory location to CI
+	        CI = CI + binaryToDecimalArray(memory[operand]);
+	        cout << "JRP" << endl;
+	        break;
+	    case 2:
+	        // load accumulator with negavive content at memory location
+	        accumulator = memory[operand];
+	        accumulator[31] = !accumulator[31];
+	        cout << "LND" << endl;
+	        break;
+	    case 3:
+	        // add accumulator content to memory location
+	        memory[operand] = accumulator;
+	        cout << "STO" << endl;
+	        break;
+	    case 4:
+	        // subtract content at memory location from accumulator
+	        accumulator = decimalToBinaryArray(binaryToDecimalArray(accumulator) - binaryToDecimalArray(memory[operand]));
+	        cout << "SUB" << endl;
+	        break;
+	    case 5:
+	        // exactly the same as case 4
+	        accumulator = decimalToBinaryArray(binaryToDecimalArray(accumulator) - binaryToDecimalArray(memory[operand]));
+	        cout << "SUB" << endl;
+	        break;
+	    case 6:
+	        // increment CI if accumulator is negative
+	        if (binaryToDecimalArray(accumulator) < 0)
+	            CI++;
+	        cout << "CMP" << endl;
+	        break;
+	    case 7:
+	        // set off stop lamp and half machine
+	    	stop = true;
+	    	cout << "STP" << endl;
+	        break;
+	    default:
+	        break;
     }
 }
