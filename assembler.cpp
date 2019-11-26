@@ -93,9 +93,8 @@ bool firstPass()
         	for (int i = 0; i < (int)line.length(); i++)	//for each character in the line
         	{
 	        	if (line[i] == ';')	//once we hit a ';' (end of line) we skip as we can ignore anything next to it on the same line as a comment
-	        	{
 	        		break;
-	        	}
+
 	        	if (line[i] == ' ')	//if we read a space:
 	        	{
 	        		if (label != "")	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
@@ -113,7 +112,7 @@ bool firstPass()
 	        	}
 	        	else	//if we read a character that is anything but a space or an end-of-line character, we need to save it somewhere 
 	        	{ 
-	        		if (readLabel == false && ended == false)	//if we haven't read any labels and havent reached the end of the program, we add currently read characters to the label variable
+	        		if (readLabel == false)	//if we haven't read any labels and havent reached the end of the program, we add currently read characters to the label variable
 	        		{
 	        			label += line[i];	//add the current character to the label string
 
@@ -127,6 +126,7 @@ bool firstPass()
 	        			{
 	        				ended = true;
 	        				label = "";
+	        				continue;
 	        			}
 	        		}
 	        		else if (readAddress == false && ended == false)	// if we haven't read an address and haven't reached the end of the program, we add currently read characters to the address variable
@@ -136,23 +136,22 @@ bool firstPass()
 	        	}
 	        }
 	        //At this point, we should have a label and address to save to the Symbol table
-	       	if (label != "" && address != "" && started == true)	// If we have information ready to save and we're still in the program section for the first pass
+	       	if (label != "" && started == true)	// If we have information ready to save and we're still in the program section for the first pass
 	       	{
-	       		if ( ended != true)	//And we haven't reached the end of the program yet
+	       		if (ended == true)
 	       		{
-					Symbol newSymbol;	//create a new symbol, set its variables and push on to the symbol table
+	       			Symbol newSymbol;	
+					newSymbol.label = label;
+					newSymbol.address = "";
+					symbolTable.push_back(newSymbol);
+	       		}
+	     		else 
+	     		{
+		     		Symbol newSymbol;	//create a new symbol, set its variables and push on to the symbol table
 					newSymbol.label = label;
 					newSymbol.address = address;
 					symbolTable.push_back(newSymbol);
-	       		}
-	       		else	//If we have reached the end of the program for the first pass, we'll only be saving the 'STP' label to make the program stop
-	       		{
-	       			address = "";	
-	       			Symbol newSymbol;
-					newSymbol.label = label;
-					newSymbol.address = address;
-					symbolTable.push_back(newSymbol);
-	       		}
+	     		}
 	       		lines++;
 				//cout << "LABEL - " << label << endl;
 	       		//cout << "ADDRESS - " << address << endl;
@@ -308,13 +307,21 @@ void convertToMachineCode()
 	for (int i = 0; i < (int)symbolTable.size(); i++)
 	{
 		string stringMaster = "";
-		for(int j = 0; j < (int)operandTable.size(); j++)
+
+		if (symbolTable.at(i).address == "")
 		{
-			if (symbolTable.at(i).address == operandTable.at(j).name)
+			stringMaster = "0000000000000";
+		}
+		else 
+		{
+			for(int j = 0; j < (int)operandTable.size(); j++)
 			{
-				string s = to_string(operandTable.at(j).lineNum);
-				string result = convertToBinary(s, false);
-				stringMaster = stringMaster + result;
+				if (symbolTable.at(i).address == operandTable.at(j).name)
+				{
+					string s = to_string(operandTable.at(j).lineNum);
+					string result = convertToBinary(s, false);
+					stringMaster = stringMaster + result;
+				}
 			}
 		}
 		stringMaster = stringMaster + firstBuffer.at(count) + "0000000000000000";
@@ -390,7 +397,7 @@ string convertToBinary(string num, bool moreZeros)
 
 void display()
 {
-	/*for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
+	for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
 	{
 		cout << "Label: " << symbolTable.at(i).label << endl;
 		cout << "Address: " << symbolTable.at(i).address << endl;
@@ -398,23 +405,20 @@ void display()
 	
 	cout << "Lines: " << lines << endl;
 	
-	for (int i = 0; i < (int)firstBuffer.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
+	/*for (int i = 0; i < (int)firstBuffer.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
 	{
 		cout << "Set: " << firstBuffer.at(i) << endl;
-	}*/
+	}
 	
 	for (int i = 0; i < (int)operandTable.size(); i++)
 	{
 		cout << "Var name: " << operandTable.at(i).name << endl;
 		cout << "Var value: " << operandTable.at(i).value << endl;
 		cout << "Var line: " << operandTable.at(i).lineNum << endl;
-	}
-
-	cout << "size: " << (int)outputBuffer.size() << endl;
+	}*/
 	
 	for (int i = 0; i < (int)outputBuffer.size(); i++)
 	{
 		cout << outputBuffer.at(i) << endl;
 	}
 }
-
