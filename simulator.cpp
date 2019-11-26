@@ -113,7 +113,11 @@ void display() {
 void displayMemoryLine(array<bool, 32> memoryLine) {
     char trueChar = '1';
     char falseChar = '0';
-    for (size_t i = 0; i < memoryLine.size(); i++) {
+    for (int i = 0; i < (int)memoryLine.size(); i++) {
+        // for visibility
+        if ( i >= 4 && i % 4 == 0) {
+            cout << " ";
+        }
         // if bit is "true"
         if (memoryLine[i]) {
             cout << trueChar;
@@ -123,4 +127,5 @@ void displayMemoryLine(array<bool, 32> memoryLine) {
         cout << " ";
     }
 }
+
 
