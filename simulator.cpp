@@ -113,7 +113,8 @@ void execute(int operand, int opcode) {
         accumulator = accumulator - memory[operand];
         break;
     case 5:
-        // !HELP! not sure what this should do
+        // exactly the same as case 4
+        accumulator = accumulator - memory[operand];
         break;
     case 6:
         // increment CI if accumulator is negative
