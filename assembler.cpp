@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <string>
 
 using namespace std;
 
@@ -16,10 +17,19 @@ struct Symbol {		//Symbol structure for the Symbol table - each symbol contains 
 	string address;
 };
 
+struct Operand {
+	string name;
+	string value;
+	int lineNum;
+};
+
 vector <Symbol> symbolTable;	//symbol table we make use of whenever a symbol is seen in the assembly code
-vector <string> outputBuffer; //binary
+vector <Operand> operandTable;
+
+vector <string> outputBuffer;	//binary
 vector <string> firstBuffer;
-vector <string> varNames;
+
+vector <string> temp; // temporary variables in binary
 
 //variables
 string inputFile = "input.txt";	//Assembly language text file is read in
@@ -28,19 +38,25 @@ bool started = false;	//Boolean to flag the START: keyword for the first pass
 bool ended = false;		//Boolean to flag the END: keyword for the first pass
 bool finishFirstPass = false;	//Boolean to mark when the first pass has ended
 int lines = 1; //counts the lines in the assembly program code
+int count = 0;
 
 //functions
 bool firstPass();	//Parses the file once, saving symbols to the symbol table
 bool secondPass();	//Second pass will save variable information at the end of the program
 void display();	//displays every symbol in the symbol table
 bool instructionSet(); //7 basic instructions
+string convertToBinary(string num, bool moreZeros);
+void convertToMachineCode();
 
-int main() {
+int main() 
+{
 	if (firstPass()) 
 	{
 		instructionSet();
-		display();
 		secondPass();
+		convertToMachineCode();
+		display();
+		//printToFile();
 	} 
 	else 
 	{
@@ -155,7 +171,6 @@ bool firstPass()
 
 bool instructionSet()
 {
-	int a = 0;
 	for (int i = 0; i < (int)symbolTable.size(); i++)
 	{
 		if (symbolTable.at(i).label == "JMP" ) {
@@ -190,71 +205,216 @@ bool instructionSet()
 	return true;
 }
 
-bool  secondPass()
+bool secondPass()
 {
 	ended = false;
-	//reads each line:
-	//after END:
-		//saves variable names to a varNames vector
-		//check each var name in symbol table matches this vector
+	started = false;
+	
 	ifstream file (inputFile);
-	bool readVarName;
-	string varName;
+	
+	bool variableIsValid = false;
+	bool readName;
+   	bool readValue;
+	
+	string name;
+	string value;
+	int lineNum = 0;
+
 	string line;	//each line of the input file
+	
 	while(getline(file, line))
 	{
-		varName = "";
-		for (int i = 0; i < (int)line.length(); i++)	//for each character in the line
-        {
+		name = "";
+		value = "";
+    	readName = false;
+    	readValue = false;
+
+    	for (int i = 0; i < (int)line.length(); i++)	//for each character in the line
+    	{
         	if (line[i] == ';')	//once we hit a ';' (end of line) we skip as we can ignore anything next to it on the same line as a comment
-	        {
-	        	break;
-	        }
-	        if (line[i] == ' ')	//if we read a space:
-	        {
-	        	if (varName != "")	//if the varName isn't empty (contains a label), we have already read the name so we set its boolean to true
-	        	{
-	        		readVarName = true;
-	        	}
-	        }
-	        // if (line[i] == ':')
-	        // {
-	        // 	break;
-	        // }
-
-    		if (readVarName == true)	//if we haven't read any labels and havent reached the end of the program, we add currently read characters to the label variable
-    		{
-    			varName += line[i];	//add the current character to the label string
-    			if (varName == "END:")	//Same as above for the end.
-    			{
-    				ended = true;
-    			}
+        	{
+        		break;
         	}
-
-	        //cout << varName << endl;
-	        //at this point, we should have a varName to save to the varNames vector
+        	if (line[i] == ' ')	//if we read a space:
+        	{
+        		if (name != "" )	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
+        		{
+        			readName = true;
+        		}
+        		if (value != "")	//if the address variable for this line isn't empty (contains an address), we have already read the address os we set its boolean to true
+        		{
+        			readValue = true ;
+        		}
+        		else 
+        		{
+        			continue;	//otherwise if we read a space but already have a label and address, we just continue until we reach the end line character.
+        		}
+        	}
+        	else	//if we read a character that is anything but a space or an end-of-line character, we need to save it somewhere 
+        	{ 
+        		if (readName == false)	//if we haven't read any labels and havent reached the end of the program, we add currently read characters to the label variable
+        		{
+        			if (line[i] != ':')
+        			{
+        				name += line[i];	//add the current character to the label string
+        			}
+        			if (name == "START")	//if we read the 'START:' flag, we set the started boolean to true and reset the label string then move on to the next character.
+        			{
+        				started = true;
+        				name = "";
+        				continue;
+        			}
+        			else if (name == "END")	//Same as above for the end.
+        			{
+        				ended = true;
+        				name = "";
+        				continue;
+        			}
+        		}
+        		else if (readValue == false)	
+        		{
+        			if(line[i] != ':')
+        			{
+        				value += line[i];
+        			}
+        			if (value == "VAR")	
+        			{
+        				value = "";
+        				continue;
+        			}
+        		}
+	        }
+	    }
+       	if (name != "" && value != "" && ended == true)	
+       	{
+       		lines++;
+       		
+       		string value1 = convertToBinary(value, true);
+       		temp.push_back(value1);
+			
+			Operand newOperand;	
+			newOperand.name = name;
+			newOperand.value = value1;
+			newOperand.lineNum = lines;
+			operandTable.push_back(newOperand);
 		}
-		varNames.push_back(varName);	//save the varName to the vector
 	}
 	file.close();
 	return true;
 }
 
+void convertToMachineCode()
+{
+	for (int i = 0; i < (int)symbolTable.size(); i++)
+	{
+		string stringMaster = "";
+		for(int j = 0; j < (int)operandTable.size(); j++)
+		{
+			if (symbolTable.at(i).address == operandTable.at(j).name)
+			{
+				string s = to_string(operandTable.at(j).lineNum);
+				string result = convertToBinary(s, false);
+				stringMaster = stringMaster + result;
+			}
+		}
+		stringMaster = stringMaster + firstBuffer.at(count) + "0000000000000000";
+		outputBuffer.push_back(stringMaster);
+		count++;
+	}
+
+	for (int i = 0; i < temp.size(); i++)
+	{
+		outputBuffer.push_back(temp.at(i));
+	}
+
+}
+
+
+//only for variables but not for line number++
+string convertToBinary(string num, bool moreZeros)
+{
+    int binaryNumber[32];
+    int binaryNumber2[13];
+
+    string result;
+    
+    int a = 0;
+    int i = 0;
+    int elements = 0;
+    int number;
+
+    number = stoi(num);
+
+    if (moreZeros == true)
+    {
+	   	while (number > 0)
+	    {
+	        binaryNumber[i] = number % 2;
+	        number = number / 2;
+	        i++;
+	        elements++;
+	    }
+    }
+    else 
+    {
+    	while (number > 0)
+	    {
+	        binaryNumber2[i] = number % 2;
+	        number = number / 2;
+	        i++;
+	        elements++;
+	    }
+    }
+
+    //for example, if we have a number 1025, its binary code is 10000000001, but we need 32 digits
+    if (moreZeros == true)
+    {
+    	for (int a = elements; a < 32; a++)
+        	binaryNumber[a] = 0;
+        
+        for (int j = 0; j < 32; j++) 
+        	result = result + to_string(binaryNumber[j]);
+    }
+    else
+    {
+    	for (int a = elements; a < 13; a++) {
+        	binaryNumber2[a] = 0;
+    	}
+
+        for (int j = 0; j < 13; j++) 
+        	result = result + to_string(binaryNumber2[j]);
+    }
+
+    return result;
+}
+
 void display()
 {
-	for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
+	/*for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
 	{
 		cout << "Label: " << symbolTable.at(i).label << endl;
 		cout << "Address: " << symbolTable.at(i).address << endl;
 	}
+	
 	cout << "Lines: " << lines << endl;
+	
 	for (int i = 0; i < (int)firstBuffer.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
 	{
 		cout << "Set: " << firstBuffer.at(i) << endl;
-	}
-	for (int i = 0; i < (int)varNames.size(); i++)
+	}*/
+	
+	for (int i = 0; i < (int)operandTable.size(); i++)
 	{
-		cout << "TEST" << endl;
-		cout << "Var name: " << varNames.at(i) << endl;
+		cout << "Var name: " << operandTable.at(i).name << endl;
+		cout << "Var value: " << operandTable.at(i).value << endl;
+		cout << "Var line: " << operandTable.at(i).lineNum << endl;
+	}
+
+	cout << "size: " << (int)outputBuffer.size() << endl;
+	
+	for (int i = 0; i < (int)outputBuffer.size(); i++)
+	{
+		cout << outputBuffer.at(i) << endl;
 	}
 }
+
