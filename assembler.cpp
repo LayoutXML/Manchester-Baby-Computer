@@ -37,7 +37,7 @@ string outputFile = "output.txt";	//Machine code (binary) text file is produced
 bool started = false;	//Boolean to flag the START: keyword for the first pass
 bool ended = false;		//Boolean to flag the END: keyword for the first pass
 bool finishFirstPass = false;	//Boolean to mark when the first pass has ended
-int lines = 1; //counts the lines in the assembly program code
+int lines = 0; //counts the lines in the assembly program code
 int count = 0;
 
 //functions
@@ -45,7 +45,9 @@ bool firstPass();	//Parses the file once, saving symbols to the symbol table
 bool secondPass();	//Second pass will save variable information at the end of the program
 void display();	//displays every symbol in the symbol table
 bool instructionSet(); //7 basic instructions
-string convertToBinary(string num, bool moreZeros);
+string addZeros(int amount);
+string convertToBinary(string num);
+string convertWithZeros(string num);
 void convertToMachineCode();
 
 int main() 
@@ -288,7 +290,7 @@ bool secondPass()
        	{
        		lines++;
        		
-       		string value1 = convertToBinary(value, true);
+       		string value1 = convertWithZeros(value);
        		temp.push_back(value1);
 			
 			Operand newOperand;	
@@ -310,7 +312,7 @@ void convertToMachineCode()
 
 		if (symbolTable.at(i).address == "")
 		{
-			stringMaster = "0000000000000";
+			stringMaster += addZeros(13);
 		}
 		else 
 		{
@@ -319,29 +321,38 @@ void convertToMachineCode()
 				if (symbolTable.at(i).address == operandTable.at(j).name)
 				{
 					string s = to_string(operandTable.at(j).lineNum);
-					string result = convertToBinary(s, false);
+					string result = convertToBinary(s);
 					stringMaster = stringMaster + result;
 				}
 			}
 		}
-		stringMaster = stringMaster + firstBuffer.at(count) + "0000000000000000";
+		stringMaster = stringMaster + firstBuffer.at(count) + addZeros(16);
 		outputBuffer.push_back(stringMaster);
 		count++;
 	}
 
-	for (int i = 0; i < temp.size(); i++)
+	for (int i = 0; i < (int)temp.size(); i++)
 	{
 		outputBuffer.push_back(temp.at(i));
 	}
 
 }
 
+string addZeros(int amount)
+{
+	string returnString = "";
+	for (int i = 0; i < amount; i++)
+	{
+		returnString += "0";
+	}
+	return returnString;
+}
+
 
 //only for variables but not for line number++
-string convertToBinary(string num, bool moreZeros)
+string convertToBinary(string num)
 {
-    int binaryNumber[32];
-    int binaryNumber2[13];
+    int binaryNumber[13];
 
     string result;
     
@@ -352,45 +363,49 @@ string convertToBinary(string num, bool moreZeros)
 
     number = stoi(num);
 
-    if (moreZeros == true)
+	while (number > 0)
     {
-	   	while (number > 0)
-	    {
-	        binaryNumber[i] = number % 2;
-	        number = number / 2;
-	        i++;
-	        elements++;
-	    }
-    }
-    else 
-    {
-    	while (number > 0)
-	    {
-	        binaryNumber2[i] = number % 2;
-	        number = number / 2;
-	        i++;
-	        elements++;
-	    }
+        binaryNumber[i] = number % 2;
+        number = number / 2;
+        i++;
+        elements++;
     }
 
-    //for example, if we have a number 1025, its binary code is 10000000001, but we need 32 digits
-    if (moreZeros == true)
-    {
-    	for (int a = elements; a < 32; a++)
-        	binaryNumber[a] = 0;
-        
-        for (int j = 0; j < 32; j++) 
-        	result = result + to_string(binaryNumber[j]);
-    }
-    else
-    {
-    	for (int a = elements; a < 13; a++) {
-        	binaryNumber2[a] = 0;
-    	}
+	for (int a = elements; a < 13; a++)
+    	binaryNumber[a] = 0;
 
-        for (int j = 0; j < 13; j++) 
-        	result = result + to_string(binaryNumber2[j]);
+    for (int j = 0; j < 13; j++) 
+    	result = result + to_string(binaryNumber[j]);
+    
+    return result;
+}
+
+string convertWithZeros(string num)
+{
+	int binaryNumber[32];
+
+    string result;
+    
+    int a = 0;
+    int i = 0;
+    int elements = 0;
+    int number;
+
+    number = stoi(num);
+
+   	while (number > 0)
+    {
+        binaryNumber[i] = number % 2;
+        number = number / 2;
+        i++;
+        elements++;
     }
+	
+	for (int a = elements; a < 32; a++)
+    	binaryNumber[a] = 0;
+    
+    for (int j = 0; j < 32; j++) 
+    	result = result + to_string(binaryNumber[j]);
 
     return result;
 }
