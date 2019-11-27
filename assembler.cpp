@@ -32,7 +32,7 @@ vector <string> firstBuffer;
 vector <string> temp; 			// temporary variables in binary
 
 //variables
-string inputFile = "input.txt";		//Assembly language text file is read in
+string inputFile = "Fibbonacci.txt";		//Assembly language text file is read in
 string outputFile = "output.txt";	//Machine code (binary) text file is produced
 
 bool started = false;				//Boolean to flag the START: keyword for the first pass
@@ -48,6 +48,7 @@ void display();						//displays every symbol in the symbol table
 bool instructionSet(); 				//7 basic instructions
 string convertToBinary(string num);
 string convertToBinary2(int number);
+string addZeros(int amount);
 void convertToMachineCode();
 void printToFile();
 
@@ -57,8 +58,9 @@ int main()
 	{
 		instructionSet();
 		secondPass();
-		convertToMachineCode();
 		display();
+		convertToMachineCode();
+		//display();
 		printToFile();
 	} 
 	else 
@@ -98,8 +100,8 @@ bool firstPass()
 	        	if (line[i] == ';')	//once we hit a ';' (end of line) we skip as we can ignore anything next to it on the same line as a comment
 	        		break;
 
-	        	if (line[i] == ' ')	//if we read a space:
-	        	{
+	        	if (line[i] == ' ' || line[i] == '\t')	//if we read a space:
+	        	{ 
 	        		if (label != "")	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
 	        		{
 	        			readLabel = true;
@@ -200,7 +202,7 @@ bool instructionSet()
 			firstBuffer.push_back("111");	
 		}
 		else {
-			cout << "Error, could not find an instruction: " << symbolTable.at(i).label  << "." << endl;
+			cout << "Error, could not find an instruction: " << symbolTable.at(i).label << "." << endl;
 			return false;
 		}
 	}
@@ -235,7 +237,7 @@ bool secondPass()
         	{
         		break;
         	}
-        	if (line[i] == ' ')	//if we read a space:
+        	if (line[i] == ' ' || line[i] == '\t')	//if we read a space:
         	{
         		if (name != "" )	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
         		{
@@ -289,18 +291,20 @@ bool secondPass()
        	{
        		lines++;
        		
-       		string value1 = convertToBinary(value);
-       		temp.push_back(value1);
+       		cout << "Value: " << value << "  name: " << name << endl;
+       		string convertedValue = convertToBinary(value);
+       		temp.push_back(convertedValue);
 			
 			Operand newOperand;	
 			newOperand.name = name;
-			newOperand.value = value1;
+			newOperand.value = convertedValue;
 			newOperand.lineNum = lines;
 			operandTable.push_back(newOperand);
 		}
 
 		if (started == false && ended == false && name == "VAR")
 		{
+			cout << "Value line 0: " << value << "  name line 0: " << name << endl;
 			string convertedValue = convertToBinary(value);
 			temp.push_back(convertedValue);
 		}
@@ -319,7 +323,7 @@ void convertToMachineCode()
 
 		if (symbolTable.at(i).address == "")
 		{
-			stringMaster = "0000000000000";
+			stringMaster = addZeros(13);
 		}
 		else 
 		{
@@ -331,24 +335,34 @@ void convertToMachineCode()
 				}
 			}
 		}
-		stringMaster = stringMaster + firstBuffer.at(count) + "0000000000000000";
+		stringMaster = stringMaster + firstBuffer.at(count) + addZeros(16);
 		outputBuffer.push_back(stringMaster);
 		count++;
 	}
 
-	for (int i = 1; i < temp.size(); i++)
+	for (int i = 1; i < (int)temp.size(); i++)
 	{
 		outputBuffer.push_back(temp.at(i));
 	}
 
 }
 
+string addZeros(int amount)
+{
+	string returnString = "";
+	for(int i = 0; i < amount; i++)
+	{
+		returnString += "0";
+	}
+	return returnString;
+}
+
+//for line number
 string convertToBinary2(int number)
 {
 	int binaryNumber[13];
 	string result; 
 
-    int a = 0;
     int i = 0;
     int elements = 0;
 
@@ -369,13 +383,12 @@ string convertToBinary2(int number)
     return result;
 }
 
-//only for variables but not for line number++
+//only for variables
 string convertToBinary(string num)
 {
     int binaryNumber[32];
     string result;
     
-    int a = 0;
     int i = 0;
     int elements = 0;
     int number;
@@ -426,6 +439,11 @@ void display()
 	{
 		cout << outputBuffer.at(i) << endl;
 	}
+
+	/*for (int i = 0; i < (int)temp.size(); i++)
+	{
+		cout << temp.at(i) << endl;
+	}*/
 }
 
 void printToFile()
