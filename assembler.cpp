@@ -32,7 +32,7 @@ vector <string> firstBuffer;
 vector <string> temp; 			// temporary variables in binary
 
 //variables
-string inputFile = "Fibbonacci.txt";		//Assembly language text file is read in
+string inputFile = "Multiply2No.txt";		//Assembly language text file is read in
 string outputFile = "output.txt";	//Machine code (binary) text file is produced
 
 bool started = false;				//Boolean to flag the START: keyword for the first pass
@@ -40,6 +40,7 @@ bool ended = false;					//Boolean to flag the END: keyword for the first pass
 bool finishFirstPass = false;		//Boolean to mark when the first pass has ended
 int lines = 0; 						//counts the lines in the assembly program code
 int count = 0;
+int varsBeforeStart = 0;			//counts the amount of variables declared before the start (usually 1)
 
 //functions
 bool firstPass();					//Parses the file once, saving symbols to the symbol table
@@ -48,7 +49,7 @@ void display();						//displays every symbol in the symbol table
 bool instructionSet(); 				//7 basic instructions
 string convertToBinary(string num);
 string convertToBinary2(int number);
-string addZeros(int amount);
+string addZeros(int amount, int chars);
 void convertToMachineCode();
 void printToFile();
 
@@ -56,11 +57,12 @@ int main()
 {
 	if (firstPass()) 
 	{
+		//display();
 		instructionSet();
 		secondPass();
 		display();
 		convertToMachineCode();
-		//display();
+		display();
 		printToFile();
 	} 
 	else 
@@ -134,7 +136,7 @@ bool firstPass()
 	        				continue;
 	        			}
 	        		}
-	        		else if (readAddress == false && ended == false)	// if we haven't read an address and haven't reached the end of the program, we add currently read characters to the address variable
+	        		else if (readAddress == false)	// if we haven't read an address and haven't reached the end of the program, we add currently read characters to the address variable
 	        		{
 	        			address += line[i];
 	        		}
@@ -143,23 +145,21 @@ bool firstPass()
 	        //At this point, we should have a label and address to save to the Symbol table
 	       	if (label != "" && started == true)	// If we have information ready to save and we're still in the program section for the first pass
 	       	{
-	       		if (ended == true)
-	       		{
+	       		//if (ended == true)
+	       		//{
 	       			Symbol newSymbol;	
 					newSymbol.label = label;
-					newSymbol.address = "";
+					newSymbol.address = address;
 					symbolTable.push_back(newSymbol);
-	       		}
+	       		/*}
 	     		else 
 	     		{
 		     		Symbol newSymbol;	//create a new symbol, set its variables and push on to the symbol table
 					newSymbol.label = label;
 					newSymbol.address = address;
 					symbolTable.push_back(newSymbol);
-	     		}
+	     		}*/
 	       		lines++;
-				//cout << "LABEL - " << label << endl;
-	       		//cout << "ADDRESS - " << address << endl;
 	       	}
 
 	       	if (started == true && ended == true)	//If we have reached the end section of the program, we break out of the loop. This is the end of the first pass.
@@ -200,6 +200,12 @@ bool instructionSet()
 		}
 		else if (symbolTable.at(i).label == "STP" ) {
 			firstBuffer.push_back("111");	
+		}
+		else if (symbolTable.at(i).label == "LDP" ) {
+			firstBuffer.push_back("0001");	
+		}
+		else if (symbolTable.at(i).label == "MTP" ) {
+			firstBuffer.push_back("1001");	
 		}
 		else {
 			cout << "Error, could not find an instruction: " << symbolTable.at(i).label << "." << endl;
@@ -270,7 +276,7 @@ bool secondPass()
         			{
         				ended = true;
         				name = "";
-        				continue;
+        				break;
         			}
         		}
         		else if (readValue == false)	
@@ -287,11 +293,12 @@ bool secondPass()
         		}
 	        }
 	    }
-       	if (name != "" && value != "" && ended == true)	
+	   // cout << "Value!!!: " << value << "  name!!!: " << name << endl;
+       	if (name != "" && value != "" && ended == true )	
        	{
        		lines++;
        		
-       		cout << "Value: " << value << "  name: " << name << endl;
+       		//cout << "Value: " << value << "  name: " << name << endl;
        		string convertedValue = convertToBinary(value);
        		temp.push_back(convertedValue);
 			
@@ -304,10 +311,26 @@ bool secondPass()
 
 		if (started == false && ended == false && name == "VAR")
 		{
-			cout << "Value line 0: " << value << "  name line 0: " << name << endl;
+			varsBeforeStart++;
+			//cout << "Value no name : " << value << "  name line 0: " << name << endl;
 			string convertedValue = convertToBinary(value);
 			temp.push_back(convertedValue);
 		}
+		if (started == false && ended == false && name != "VAR" && value != "")	
+       	{
+       		//lines++;
+       		//cout << "Value name before: " << value << "  name: " << name << endl;
+       		string convertedValue = convertToBinary(value);
+       		temp.push_back(convertedValue);
+			
+			Operand newOperand;	
+			newOperand.name = name;
+			newOperand.value = convertedValue;
+			newOperand.lineNum = varsBeforeStart;
+			operandTable.push_back(newOperand);
+			varsBeforeStart++;
+		}
+
 	}
 	file.close();
 	return true;
@@ -315,15 +338,19 @@ bool secondPass()
 
 void convertToMachineCode()
 {
-	outputBuffer.push_back(temp.at(0));
+	for(int i = 0; i < varsBeforeStart; i++)
+	{
+		outputBuffer.push_back(temp.at(i));	//pushes every variable declared before main program to output buffer
+	}
 
 	for (int i = 0; i < (int)symbolTable.size(); i++)
 	{
 		string stringMaster = "";
-
+		//cout << "symbol table address: " << symbolTable.at(i).address << endl;
 		if (symbolTable.at(i).address == "")
 		{
-			stringMaster = addZeros(13);
+			for (int a = 0; a < 13; a++)
+				stringMaster += "0";
 		}
 		else 
 		{
@@ -335,22 +362,23 @@ void convertToMachineCode()
 				}
 			}
 		}
-		stringMaster = stringMaster + firstBuffer.at(count) + addZeros(16);
+		int chars = (int)firstBuffer.at(count).size();
+		stringMaster = stringMaster + firstBuffer.at(count) + addZeros(19,chars);
 		outputBuffer.push_back(stringMaster);
 		count++;
 	}
 
-	for (int i = 1; i < (int)temp.size(); i++)
+	for (int i = varsBeforeStart; i < (int)temp.size(); i++)
 	{
 		outputBuffer.push_back(temp.at(i));
 	}
 
 }
 
-string addZeros(int amount)
+string addZeros(int amount, int chars)
 {
 	string returnString = "";
-	for(int i = 0; i < amount; i++)
+	for(int i = 0 + chars; i < amount; i++)
 	{
 		returnString += "0";
 	}
