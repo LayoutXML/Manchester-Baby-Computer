@@ -1,3 +1,10 @@
+/*
+	Names: Calum Logan, Emilija Budryte, Rokas Jankunas, Jokubas Butkus, & Momchil Badzhev
+	simulator.cpp written by: Rokas Jankunas, Jokubas Butkus, & Momchil Badzhev
+	Matriculation Numbers: 180013466, ###ADD MATRICULATION NUMBERS
+	Module Code: AC21009
+*/
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -36,6 +43,8 @@ int main() {
 	if (input == "Y" || input == "y") {
 		isStepByStep = true;
 	}
+    cout << CI << endl;
+    cout << memory.size() << endl;
 	while (CI < 31 && CI < (int)memory.size() - 1) {
 		CI++;
 		fetch();
@@ -53,17 +62,22 @@ int main() {
 	return 0;
 }
 
+// Fetching memory line at number stored in CI (Control Instruction)
+// to PI (Present Instruction)
 void fetch() {
 	PI = memory[CI];
 }
 
+// Decode operand and opcode from PI (Present Instruction)
 void decode() {
 	vector<bool> operandBinary;
 	vector<bool> opcodeBinary;
 	int i = 0;
+    // Get binary format of operand
 	for (i; i < 13; i++) {
 		operandBinary.push_back(PI[i]);
 	}
+    // Get binary format of opcode
 	for (i; i < 16; i++) {
 		opcodeBinary.push_back(PI[i]);
 	}
@@ -71,7 +85,7 @@ void decode() {
 	opcode = binaryToDecimal(opcodeBinary);
 }
 
-//Converting binary number (stored in a vector in big endian format) to decimal number
+// Converting binary number (stored in a vector in big endian format) to decimal number
 int binaryToDecimal(vector<bool> binaryVector) {
 	int decimal = 0;
 	for (size_t i = 0; i < binaryVector.size(); i++) {
@@ -80,18 +94,20 @@ int binaryToDecimal(vector<bool> binaryVector) {
 	return decimal;
 }
 
-//Converting binary number (stored in a vector in big endian format) to decimal number
+// Converting binary number (stored in a vector in big endian format) to decimal number
 int binaryToDecimalArray(array<bool, 32> array) {
 	int decimal = 0;
 	for (size_t i = 0; i < array.size() - 1; i++) {
 		decimal += array[i] * pow(2, (int)i);
 	}
+    // Check sign of binary number
 	if (array[array.size() - 1]) {
 		decimal *= -1;
 	}
 	return decimal;
 }
 
+// Cnverting decimal number to binary number stored as array
 array<bool, 32> decimalToBinaryArray(int decimal) {
 	bool isNegative = decimal < 0;
 	array<bool, 32> array;
@@ -99,7 +115,8 @@ array<bool, 32> decimalToBinaryArray(int decimal) {
 		decimal *= -1;
 	}
 	for (int i = 30; i >= 0; i--) {
-		if (decimal < pow(2, i)) {
+		// If decimal is smaller than 2^i
+        if (decimal < pow(2, i)) {
 			array[i] = false;
 		} else {
 			array[i] = true;
@@ -110,7 +127,7 @@ array<bool, 32> decimalToBinaryArray(int decimal) {
 	return array;
 }
 
-// read file, store instructions in memory
+// Reading input file and storing it's contents in memory
 void readFile() {
     string line;
     array<bool, 32> memoryLine;
@@ -120,9 +137,10 @@ void readFile() {
         cout << "File error" << endl;
     }
     while(getline(file, line) && memory.size() <= 32) {
-        if (line.size() == 33) {
-            // convert string to bool arraye
-            for (size_t i = 0; i < line.length() - 1; i++) {
+        cout << line << endl;
+        if (line.size() >= 32) {
+            // convert string to bool array
+            for (size_t i = 0; i < 32; i++) {
                 if (line[i] == '0') {
                     memoryLine[i] = 0;
                 } else if (line[i] == '1') {
@@ -138,14 +156,15 @@ void readFile() {
     file.close();
 }
 
-// Display memory, CI, PI and accumulator
+// Displaying memory, CI, PI and accumulator
 void display() {
     char trueChar = '1';
     char falseChar = '0';
-    // Memory display
     cout << endl;
+    // Display memory
     cout << "Memory:" << endl;
     for (size_t i = 0; i < memory.size(); i++) {
+        // Display number of the memory line
         cout << i << ": ";
         displayMemoryLine(memory[i]);
         cout << endl;
@@ -159,11 +178,12 @@ void display() {
     cout << endl;
 }
 
+// Displaying a line of memory
 void displayMemoryLine(array<bool, 32> memoryLine) {
     char trueChar = '1';
     char falseChar = '0';
     for (int i = 0; i < (int)memoryLine.size(); i++) {
-        // for visibility
+        // Split display of a memory line to groups of 4 bools (for visibility)
         if ( i >= 4 && i % 4 == 0) {
             cout << " ";
         }
@@ -177,6 +197,7 @@ void displayMemoryLine(array<bool, 32> memoryLine) {
     }
 }
 
+// Executing operations
 void execute() {
 	cout << endl;
     switch (opcode) {
@@ -226,3 +247,4 @@ void execute() {
 	        break;
     }
 }
+
