@@ -2,7 +2,7 @@
 	Names: Calum Logan, Emilija Budryte, Rokas Jankunas, Jokubas Butkus, & Momchil Badzhev
 	assembler.cpp written by: Calum Logan, Emilija Budryte
 	Matriculation Numbers: 180013466, ###ADD MATRICULATION NUMBERS
-	Module Code: AC21008
+	Module Code: AC21009
 */
 
 #include <iostream>
@@ -29,26 +29,28 @@ vector <Operand> operandTable;
 vector <string> outputBuffer;	//binary
 vector <string> firstBuffer;
 
-vector <string> temp; // temporary variables in binary
+vector <string> temp; 			// temporary variables in binary
 
 //variables
-string inputFile = "input.txt";	//Assembly language text file is read in
+string inputFile = "input.txt";		//Assembly language text file is read in
 string outputFile = "output.txt";	//Machine code (binary) text file is produced
-bool started = false;	//Boolean to flag the START: keyword for the first pass
-bool ended = false;		//Boolean to flag the END: keyword for the first pass
-bool finishFirstPass = false;	//Boolean to mark when the first pass has ended
-int lines = 0; //counts the lines in the assembly program code
+
+bool started = false;				//Boolean to flag the START: keyword for the first pass
+bool ended = false;					//Boolean to flag the END: keyword for the first pass
+bool finishFirstPass = false;		//Boolean to mark when the first pass has ended
+int lines = 0; 						//counts the lines in the assembly program code
 int count = 0;
 
 //functions
-bool firstPass();	//Parses the file once, saving symbols to the symbol table
-bool secondPass();	//Second pass will save variable information at the end of the program
-void display();	//displays every symbol in the symbol table
-bool instructionSet(); //7 basic instructions
-string addZeros(int amount);
+bool firstPass();					//Parses the file once, saving symbols to the symbol table
+bool secondPass();					//Second pass will save variable information at the end of the program
+void display();						//displays every symbol in the symbol table
+bool instructionSet(); 				//7 basic instructions
 string convertToBinary(string num);
-string convertWithZeros(string num);
+string convertToBinary2(int number);
 void convertToMachineCode();
+void printToFile();
+string addZeros(int amount);
 
 int main() 
 {
@@ -58,7 +60,7 @@ int main()
 		secondPass();
 		convertToMachineCode();
 		display();
-		//printToFile();
+		printToFile();
 	} 
 	else 
 	{
@@ -70,10 +72,10 @@ int main()
 bool firstPass()
 {
 	ifstream file (inputFile);
-	string line;	//each line of the input file
-	string label = "";	//the label of a symbol read in the file
-	string address = "";	//the address of a symbol read in the file
-	bool readLabel = false;	//boolean which tells us a label is being read
+	string line;				//each line of the input file
+	string label = "";			//the label of a symbol read in the file
+	string address = "";		//the address of a symbol read in the file
+	bool readLabel = false;		//boolean which tells us a label is being read
 	bool readAddress = false;	//boolean that tells us an address is being read
 
 	//if we can't open the file, simply print an error message
@@ -213,13 +215,11 @@ bool secondPass()
 	
 	ifstream file (inputFile);
 	
-	bool variableIsValid = false;
 	bool readName;
    	bool readValue;
 	
 	string name;
 	string value;
-	int lineNum = 0;
 
 	string line;	//each line of the input file
 	
@@ -290,7 +290,7 @@ bool secondPass()
        	{
        		lines++;
        		
-       		string value1 = convertWithZeros(value);
+       		string value1 = convertToBinary(value);
        		temp.push_back(value1);
 			
 			Operand newOperand;	
@@ -299,6 +299,12 @@ bool secondPass()
 			newOperand.lineNum = lines;
 			operandTable.push_back(newOperand);
 		}
+
+		if (started == false && ended == false && name == "VAR")
+		{
+			string convertedValue = convertToBinary(value);
+			temp.push_back(convertedValue);
+		}
 	}
 	file.close();
 	return true;
@@ -306,13 +312,15 @@ bool secondPass()
 
 void convertToMachineCode()
 {
+	outputBuffer.push_back(temp.at(0));
+
 	for (int i = 0; i < (int)symbolTable.size(); i++)
 	{
 		string stringMaster = "";
 
 		if (symbolTable.at(i).address == "")
 		{
-			stringMaster += addZeros(13);
+			stringMaster = addZeros(13);
 		}
 		else 
 		{
@@ -320,9 +328,7 @@ void convertToMachineCode()
 			{
 				if (symbolTable.at(i).address == operandTable.at(j).name)
 				{
-					string s = to_string(operandTable.at(j).lineNum);
-					string result = convertToBinary(s);
-					stringMaster = stringMaster + result;
+					stringMaster = stringMaster + convertToBinary2(operandTable.at(j).lineNum);
 				}
 			}
 		}
@@ -331,11 +337,10 @@ void convertToMachineCode()
 		count++;
 	}
 
-	for (int i = 0; i < (int)temp.size(); i++)
+	for (int i = 1; i < (int)temp.size(); i++)
 	{
 		outputBuffer.push_back(temp.at(i));
 	}
-
 }
 
 string addZeros(int amount)
@@ -348,20 +353,13 @@ string addZeros(int amount)
 	return returnString;
 }
 
-
-//only for variables but not for line number++
-string convertToBinary(string num)
+string convertToBinary2(int number)
 {
-    int binaryNumber[13];
+	int binaryNumber[13];
+	string result; 
 
-    string result;
-    
-    int a = 0;
     int i = 0;
     int elements = 0;
-    int number;
-
-    number = stoi(num);
 
 	while (number > 0)
     {
@@ -371,36 +369,36 @@ string convertToBinary(string num)
         elements++;
     }
 
-	for (int a = elements; a < 13; a++)
+	for (int a = elements; a < 13; a++) 
     	binaryNumber[a] = 0;
-
+	
     for (int j = 0; j < 13; j++) 
     	result = result + to_string(binaryNumber[j]);
-    
+
     return result;
 }
 
-string convertWithZeros(string num)
+//only for variables but not for line number++
+string convertToBinary(string num)
 {
-	int binaryNumber[32];
-
+    int binaryNumber[32];
     string result;
     
-    int a = 0;
     int i = 0;
     int elements = 0;
     int number;
 
     number = stoi(num);
 
-   	while (number > 0)
-    {
+    while (number > 0)
+	{
         binaryNumber[i] = number % 2;
         number = number / 2;
         i++;
         elements++;
     }
-	
+
+    //for example, if we have a number 1025, its binary code is 10000000001, but we need 32 digits
 	for (int a = elements; a < 32; a++)
     	binaryNumber[a] = 0;
     
@@ -412,7 +410,7 @@ string convertWithZeros(string num)
 
 void display()
 {
-	for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
+	/*for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
 	{
 		cout << "Label: " << symbolTable.at(i).label << endl;
 		cout << "Address: " << symbolTable.at(i).address << endl;
@@ -420,7 +418,7 @@ void display()
 	
 	cout << "Lines: " << lines << endl;
 	
-	/*for (int i = 0; i < (int)firstBuffer.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
+	for (int i = 0; i < (int)firstBuffer.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
 	{
 		cout << "Set: " << firstBuffer.at(i) << endl;
 	}
@@ -436,4 +434,14 @@ void display()
 	{
 		cout << outputBuffer.at(i) << endl;
 	}
+}
+
+void printToFile()
+{
+	ofstream out (outputFile);
+	for (int i = 0; i < (int)outputBuffer.size(); i++)
+	{
+		out << outputBuffer.at(i) << endl;
+	}
+	out.close();
 }
