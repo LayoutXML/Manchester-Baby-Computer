@@ -48,9 +48,9 @@ void display();						//displays every symbol in the symbol table
 bool instructionSet(); 				//7 basic instructions
 string convertToBinary(string num);
 string convertToBinary2(int number);
+string addZeros(int amount);
 void convertToMachineCode();
 void printToFile();
-string addZeros(int amount);
 
 int main() 
 {
@@ -341,6 +341,7 @@ void convertToMachineCode()
 	{
 		outputBuffer.push_back(temp.at(i));
 	}
+
 }
 
 string addZeros(int amount)
