@@ -26,9 +26,16 @@ int CI = 0;
 int opcode = 0;
 int operand = 0;
 bool stop = false;
+bool isStepByStep = false;
 
 int main() {
 	readFile();
+	cout << "Go step by step? [Y/n]" << endl;
+	string input;
+	cin >> input;
+	if (input == "Y" || input == "y") {
+		isStepByStep = true;
+	}
 	while (CI < 31 && CI < (int)memory.size() - 1) {
 		CI++;
 		fetch();
@@ -38,7 +45,10 @@ int main() {
 		if (stop) {
 			return 0;
 		}
-		sleep(10);
+		if (isStepByStep) {
+			cout << "Enter anything to go to the next step" << endl;
+			cin >> input;
+		}
 	}
 	return 0;
 }
