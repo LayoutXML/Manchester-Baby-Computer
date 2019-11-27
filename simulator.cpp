@@ -222,6 +222,16 @@ void execute() {
 	    	stop = true;
 	    	cout << "STP" << endl;
 	        break;
+        case 8:
+	        // copy variable to accumulator
+            accumulator = memory[operand];
+	    	cout << "LDP" << endl;
+	        break;
+        case 9:
+	        // multiply variales
+            accumulator = decimalToBinaryArray(binaryToDecimalArray(accumulator) * binaryToDecimalArray(memory[operand]));
+	    	cout << "MTP" << endl;
+	        break;    
 	    default:
 	        break;
     }
