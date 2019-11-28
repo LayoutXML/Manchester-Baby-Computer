@@ -76,11 +76,13 @@ void decode() {
 		operandBinary.push_back(PI[i]);
 	}
     // Get binary format of opcode
-	for (i; i < 17; i++) {
+	for (i; i < 16; i++) {
 		opcodeBinary.push_back(PI[i]);
 	}
 	operand = binaryToDecimal(operandBinary);
 	opcode = binaryToDecimal(opcodeBinary);
+	cout << endl;
+	cout << "Decoded operand " << operand << " and opcode " << opcode;
 }
 
 // Converting binary number (stored in a vector in big endian format) to decimal number
@@ -193,7 +195,7 @@ void displayMemoryLine(array<bool, 32> memoryLine) {
         }
         cout << " ";
     }
-	cout << "Value: " << binaryToDecimalArray(memoryLine);
+    cout << "Value: " << binaryToDecimalArray(memoryLine);
 }
 
 // Executing operations
@@ -203,45 +205,51 @@ void execute() {
 	    case 0:
 	        // set CI to content of memeory location
 	        CI = binaryToDecimalArray(memory[operand]);
-	        cout << "JMP" << endl;
+	        cout << "JMP";
 	        break;
 	    case 1:
 	        // add content at memory location to CI
 	        CI = CI + binaryToDecimalArray(memory[operand]);
-	        cout << "JRP" << endl;
+	        cout << "JRP";
 	        break;
 	    case 2:
 	        // load accumulator with negavive content at memory location
 	        accumulator = memory[operand];
 	        accumulator[31] = !accumulator[31];
-	        cout << "LND" << endl;
+	        cout << "LND";
 	        break;
 	    case 3:
 	        // add accumulator content to memory location
 	        memory[operand] = accumulator;
-	        cout << "STO" << endl;
+	        cout << "STO";
 	        break;
 	    case 4:
+	    case 5:
 	        // subtract content at memory location from accumulator
 	        accumulator = decimalToBinaryArray(binaryToDecimalArray(accumulator) - binaryToDecimalArray(memory[operand]));
-	        cout << "SUB" << endl;
-	        break;
-	    case 5:
-	        // exactly the same as case 4
-	        accumulator = decimalToBinaryArray(binaryToDecimalArray(accumulator) - binaryToDecimalArray(memory[operand]));
-	        cout << "SUB" << endl;
+	        cout << "SUB";
 	        break;
 	    case 6:
 	        // increment CI if accumulator is negative
 	        if (binaryToDecimalArray(accumulator) < 0)
 	            CI++;
-	        cout << "CMP" << endl;
+	        cout << "CMP";
 	        break;
 	    case 7:
 	        // set off stop lamp and half machine
 	    	stop = true;
-	    	cout << "STP" << endl;
+	    	cout << "STP";
 	        break;
+        case 8:
+	        // copy variable to accumulator
+            accumulator = memory[operand];
+	    	cout << "LDP" << endl;
+	        break;
+        case 9:
+	        // multiply variales
+            accumulator = decimalToBinaryArray(binaryToDecimalArray(accumulator) * binaryToDecimalArray(memory[operand]));
+	    	cout << "MTP" << endl;
+	        break;    
 	    default:
 	        break;
     }
