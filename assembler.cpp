@@ -12,8 +12,7 @@
 
 using namespace std;
 
-struct Symbol 
-{
+struct Symbol {		//Symbol structure for the Symbol table - each symbol contains a label and a memory address
 	string label;
 	string address;
 };
@@ -24,45 +23,87 @@ struct Operand {
 	int lineNum;
 };
 
-vector <Symbol> symbolTable;	//Symbol table is used for main program
+vector <Symbol> symbolTable;	//symbol table we make use of whenever a symbol is seen in the assembly code
+vector <Operand> operandTable;
 
-vector <Operand> operandTable;	//Operand table is used for variables
+vector <string> outputBuffer;	//binary
+vector <string> firstBuffer;
 
-vector <string> outputBuffer;	//Output buffer is used to print binary machine code lines to file
-vector <string> firstBuffer;	//Buffer to print commands
-vector <string> temp; 			//Temp buffer to hold variables before code starts
+vector <string> temp; 			// temporary variables in binary
 
+//variables
+string inputFile = "Multiply2No.txt";		//Assembly language text file is read in
+string outputFile = "output.txt";	//Machine code (binary) text file is produced
+bool started = false;				//Boolean to flag the START: keyword for the first pass
+bool ended = false;					//Boolean to flag the END: keyword for the first pass
+bool finishFirstPass = false;		//Boolean to mark when the first pass has ended
+int lines = 0; 						//counts the lines in the assembly program code
+int count = 0;
+int varsBeforeStart = 0;			//counts the amount of variables declared before the start (usually 1)
 
-string inputFile = "Multiply2No.txt";	//Assembly language text file is read in
-string outputFile = "output.txt";		//Machine code (binary) text file is produced
+//functions
+bool firstPass();					//Parses the file once, saving symbols to the symbol table
+bool secondPass();					//Second pass will save variable information at the end of the program
+void display();						//displays every symbol in the symbol table
+bool instructionSet(); 				//7 basic instructions
+string convertToBinary(string num);
+string convertToBinary2(int number);
+string addZeros(int amount, int chars);
+bool convertToMachineCode();
+void printToFile();
 
-bool started = false;					//Booleans which are used to flag different states of the code
-bool ended = false;						
-bool finishFirstPass = false;			
-int lines = 0; 							//Keeps track of how many lines there are in the machine code
-int varsBeforeStart = 0;				//Keeps track of how many variables there are before the START keyword
-
-bool firstPass();						//Function which goes through inputFile once and saves commands to the SymbolTable
-bool secondPass();						//Function which goes through the inputFile again, saving variables to the variableTable. Similar to firstPass()
-void display();							//Function which displays desired content to the terminal
-bool instructionSet(); 					//Initialises the Instruction Set we're using in this Assembly Language Program
-string convertToBinary(string num);		//Converts the input string to binary ++++
-string convertToBinary2(int number);	//Converts the input int to binary ++++
-string addZeros(int amount, int chars);	//Adds the correct amount of zeros to the input int so the machine code is formatted correctly
-void convertToMachineCode();			//Converts everything to machine code by saving it to the output buffer
-void printToFile();						//Prints the contents of the output buffer to the outputFile
-
-int main()
+int main() 
 {
+	int choice;
+	string fn;
+
+	cout << "-------------------------------------------------------" << endl;
+	cout << "Choose a file you want run or enter your own file name." << endl;
+	cout << "1. AddTwoNo.txt " << endl;
+	cout << "2. AddThreeNo.txt" << endl;
+	cout << "3. Multiply2No.txt" << endl;
+	cout << "4. Enter your file name." << endl;
+	cout << "0. Exit." << endl;
+	cout << "-------------------------------------------------------" << endl;
+	cin >> choice;
+
+	switch(choice) 
+	{
+		case 1:
+			inputFile = "AddTwoNo.txt";
+			break;
+		case 2:
+			inputFile = "AddThreeNo.txt";
+			break;
+		case 3:
+			inputFile = "Multiply2No.txt";
+			break;
+		case 4:
+			cin >> fn;
+			inputFile = fn;
+			break;
+		case 0:
+			exit(0);
+			break;
+		default:
+			cout << "Please select a valid option." << endl;
+			break;
+	}
+
+	cout << endl;
+
 	if (firstPass()) 
 	{
-		display();
 		instructionSet();
-		secondPass();
-		display();
-		convertToMachineCode();
-		display();
-		printToFile();
+		if (secondPass() == false)
+			return 1;
+		else 
+		{
+			if(convertToMachineCode() == false)
+				return 1;
+			else
+				printToFile();
+		}
 	} 
 	else 
 		return 1;
@@ -75,198 +116,132 @@ bool firstPass()
 	string line;				//each line of the input file
 	string label = "";			//the label of a symbol read in the file
 	string address = "";		//the address of a symbol read in the file
-	bool readLabel = false;		//boolean which tells us a label has been read
-	bool readAddress = false;	//boolean that tells us an address has been read
+	bool readLabel = false;		//boolean which tells us a label is being read
+	bool readAddress = false;	//boolean that tells us an address is being read
 
-    if (!file) //if we can't open the file, print an error message
+	//if we can't open the file, simply print an error message
+    if (!file)
   	{
         cout << "Error, cannot open a file." << endl;
         return false;
     }
-    else 	//If we can open the file, we need to read commands
+    else
     {
         while (getline(file, line))	//while a line can be read, we go on to the next line
         {
-        	label = "";	//initializing local variables
+        	//reset relevant variables
+        	label = "";	
         	address = "";
         	readLabel = false;
         	readAddress = false;
 
-        	for (int i = 0; i < (int)line.length(); i++)	//reach each character in the current line
+        	for (int i = 0; i < (int)line.length(); i++)	//for each character in the line
         	{
-	        	if (line[i] == ';')	//break when we hit an endline character
+	        	if (line[i] == ';')	//once we hit a ';' (end of line) we skip as we can ignore anything next to it on the same line as a comment
 	        		break;
-				if (line[i] == ' ' || line[i] == '\t')	//continue when we read a space/tab unless we've started saving information, in which case change bool value
+	        	if (line[i] == ' ' || line[i] == '\t')	//if we read a space:
 	        	{ 
-	        		if (label != "")	
+	        		if (label != "")	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
 	        			readLabel = true;
-	        		if (address != "")	
+	        		if (address != "")	//if the address variable for this line isn't empty (contains an address), we have already read the address os we set its boolean to true
 	        			readAddress = true;
 	        		else 
-	        			continue;
+	        			continue;	//otherwise if we read a space but already have a label and address, we just continue until we reach the end line character.
 	        	}
 	        	else	//if we read a character that is anything but a space or an end-of-line character, we need to save it somewhere 
 	        	{ 
-	        		if (!readLabel)	//if we haven't read any labels, we add currently read characters to the label variable
+	        		if (readLabel == false)	//if we haven't read any labels and havent reached the end of the program, we add currently read characters to the label variable
 	        		{
-	        			label += line[i];	
-	        			if (label == "START:")	//if we read the 'START:' flag, reset the started bool and continue
+	        			label += line[i];	//add the current character to the label string
+
+	        			if (label == "START:")	//if we read the 'START:' flag, we set the started boolean to true and reset the label string then move on to the next character.
 	        			{
+	        				cout << "Label START was found in the code." << endl;
 	        				started = true;
 	        				label = "";
 	        				continue;
 	        			}
-	        			else if (label == "END:")	//same as above for the end.
+	        			else if (label == "END:")	//Same as above for the end.
 	        			{
+	        				cout << "Label END was found in the code." << endl;
 	        				ended = true;
 	        				label = "";
 	        				continue;
 	        			}
 	        		}
-	        		else if (!readAddress)	// if we haven't read an address, we add currently read characters to the address variable
+	        		else if (readAddress == false)	// if we haven't read an address and haven't reached the end of the program, we add currently read characters to the address variable
 	        			address += line[i];
 	        	}
 	        }
-	       	if (label != "" && started == true)	//If we're in the functional section of the program, we save current symbols to the table
+	        //At this point, we should have a label and address to save to the Symbol table
+	       	if (label != "" && started == true)	// If we have information ready to save and we're still in the program section for the first pass
 	       	{
-	   			Symbol newSymbol;	
+       			Symbol newSymbol;	
 				newSymbol.label = label;
 				newSymbol.address = address;
 				symbolTable.push_back(newSymbol);
-	       		lines++;	//increment the lines variable as this is relevant to the output file
+	       		lines++;
 	       	}
-	       	if (started == true && ended == true)	//Once we hit the end, break
+
+	       	if (started == true && ended == true)	//If we have reached the end section of the program, we break out of the loop. This is the end of the first pass.
 	       		break;
 	    }
-    }
-    file.close();	//Close the file once we're finished with it
-	return true;
-}
-
-bool secondPass()
-{
-	ended = false;	//Initialise bools
-	started = false;
-	
-	ifstream file (inputFile);	//Open input file (no need to check as we've already checked in firstPass())
-	
-	bool readName;	//Declaring local variables: bool to tell us if a name has been read
-   	bool readValue;	//Tells us if a value has been read
-	string name;	//The name of a variable being read
-	string value;	//The value of a variable being read
-	string line;	//Each line of the file being read
-	
-	while(getline(file, line))
-	{
-		name = "";	//Initialise variables
-		value = "";
-    	readName = false;
-    	readValue = false;
-
-    	for (int i = 0; i < (int)line.length(); i++)
-    	{
-        	if (line[i] == ';')	
-        		break;
-        	if (line[i] == ' ' || line[i] == '\t')	
-        	{
-        		if (name != "" )	
-        			readName = true;
-        		if (value != "")	
-        			readValue = true ;
-        		else 
-        			continue;	
-        	}
-        	else
-        	{ 
-        		if (readName == false)	
-        		{
-        			if (line[i] != ':')
-        				name += line[i];	
-        			if (name == "START")	
-        			{
-        				started = true;
-        				name = "";
-        				continue;
-        			}
-        			else if (name == "END")	
-        			{
-        				ended = true;
-        				name = "";
-        				break;
-        			}
-        		}
-        		else if (readValue == false)	
-        		{
-        			if(line[i] != ':')		//For the second pass, we need to ignore ':' so we can save variable names
-        				value += line[i];
-        			if (value == "VAR")		//We reset value to "" if we read VAR as this simply means variable
-        			{
-        				value = "";
-        				continue;
-        			}
-        		}
-	        }
+	    if((started == false && ended == true) || (started == true && ended == false) || (started == false && ended == false))
+	    {
+	    	cout << "Error, please include START: and END: flags in your program." << endl;
+	    	file.close();
+	    	return false;
 	    }
-       	if (name != "" && value != "" && ended == true )	//We increment lines and push the read variable to operandTable
-       	{
-       		lines++;
-       		string convertedValue = convertToBinary(value);
-       		temp.push_back(convertedValue);
-			Operand newOperand;	
-			newOperand.name = name;
-			newOperand.value = convertedValue;
-			newOperand.lineNum = lines;
-			operandTable.push_back(newOperand);
-		}
-
-		if (started == false && ended == false && name == "VAR")	//We increment the counter for first vars if we read a variable at the start with no name
-		{
-			varsBeforeStart++;
-			string convertedValue = convertToBinary(value);
-			temp.push_back(convertedValue);
-		}
-		if (started == false && ended == false && name != "VAR" && value != "")	//We save a variable to the operandTable and increment the counter
-       	{
-       		string convertedValue = convertToBinary(value);
-       		temp.push_back(convertedValue);
-			Operand newOperand;	
-			newOperand.name = name;
-			newOperand.value = convertedValue;
-			newOperand.lineNum = varsBeforeStart;
-			operandTable.push_back(newOperand);
-			varsBeforeStart++;
-		}
-	}
-	file.close();
+    }
+    file.close();
 	return true;
 }
 
 bool instructionSet()
 {
-	for (int i = 0; i < (int)symbolTable.size(); i++)	//Compares saved symbols with the instruction set below and pishes onto the first buffer if identical
+	for (int i = 0; i < (int)symbolTable.size(); i++)
 	{
-		if (symbolTable.at(i).label == "JMP")
+		if (symbolTable.at(i).label == "JMP" ) {
+			cout << "Instruction JMP was found and added to the output buffer." << endl;
 			firstBuffer.push_back("000");
-		else if (symbolTable.at(i).label == "JRP")
+		}
+		else if (symbolTable.at(i).label == "JRP" ) {
+			cout << "Instruction JRP was found and added to the output buffer." << endl;
 			firstBuffer.push_back("100");
-		else if (symbolTable.at(i).label == "LDN")
+		}
+		else if (symbolTable.at(i).label == "LDN" ) {
+			cout << "Instruction LDN was found and added to the output buffer." << endl;
 			firstBuffer.push_back("010");
-		else if (symbolTable.at(i).label == "STO")
+		}
+		else if (symbolTable.at(i).label == "STO" ) {
+			cout << "Instruction STO was found and added to the output buffer." << endl;
 			firstBuffer.push_back("110");	
-		else if (symbolTable.at(i).label == "SUB")
+		}
+		else if (symbolTable.at(i).label == "SUB" ) {
+			cout << "Instruction SUB was found and added to the output buffer." << endl;
 			firstBuffer.push_back("001");
-		else if (symbolTable.at(i).label == "SUB")
+		}
+		else if (symbolTable.at(i).label == "SUB" ) {
+			cout << "Instruction SUB was found and added to the output buffer." << endl;
 			firstBuffer.push_back("101");
-		else if (symbolTable.at(i).label == "CMP")
+		}
+		else if (symbolTable.at(i).label == "CMP" ) {
+			cout << "Instruction CMP was found and added to the output buffer." << endl;
 			firstBuffer.push_back("011");	
-		else if (symbolTable.at(i).label == "STP")
+		}
+		else if (symbolTable.at(i).label == "STP" ) {
+			cout << "Instruction STP was found and added to the output buffer." << endl;
 			firstBuffer.push_back("111");	
-		else if (symbolTable.at(i).label == "LDP")
+		}
+		else if (symbolTable.at(i).label == "LDP" ) {
+			cout << "Instruction LDP was found and added to the output buffer." << endl;
 			firstBuffer.push_back("0001");	
-		else if (symbolTable.at(i).label == "MTP")
+		}
+		else if (symbolTable.at(i).label == "MTP" ) {
+			cout << "Instruction MTP was found and added to the output buffer." << endl;
 			firstBuffer.push_back("1001");	
-		else 
-		{
+		}
+		else {
 			cout << "Error, could not find an instruction: " << symbolTable.at(i).label << "." << endl;
 			return false;
 		}
@@ -274,34 +249,178 @@ bool instructionSet()
 	return true;
 }
 
-void convertToMachineCode()
+bool secondPass()
 {
-	int count = 0;	//Keeps track of each line of code in the output file
-	for(int i = 0; i < varsBeforeStart; i++)	//For each variable before START: we push the variable to the output buffer
-		outputBuffer.push_back(temp.at(i));
-	for (int i = 0; i < (int)symbolTable.size(); i++)	//For each instruction in the Symbol Table, we need to add it to the output buffer
+	ended = false;
+	started = false;
+	
+	ifstream file (inputFile);
+	
+	bool readName;
+   	bool readValue;
+   	bool isValidInstruction = false;
+	
+	string name;
+	string value;
+
+	string line;	//each line of the input file
+	
+	while(getline(file, line))
 	{
-		string stringMaster = "";	//Initialize a master string to ""
-		if (symbolTable.at(i).address == "")	//If there is no address given, we always add 13 0s so that the machine code adds up to 32 bits
+		name = "";
+		value = "";
+    	readName = false;
+    	readValue = false;
+
+    	for (int i = 0; i < (int)line.length(); i++)	//for each character in the line
+    	{
+        	if (line[i] == ';')	//once we hit a ';' (end of line) we skip as we can ignore anything next to it on the same line as a comment
+        		break;
+        	if (line[i] == ' ' || line[i] == '\t')	//if we read a space:
+        	{
+        		if (name != "" )	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
+        			readName = true;
+        		if (value != "")	//if the address variable for this line isn't empty (contains an address), we have already read the address os we set its boolean to true
+        			readValue = true ;
+        		else 
+        			continue;	//otherwise if we read a space but already have a label and address, we just continue until we reach the end line character.
+        	}
+        	else	//if we read a character that is anything but a space or an end-of-line character, we need to save it somewhere 
+        	{ 
+        		if (readName == false)	//if we haven't read any labels and havent reached the end of the program, we add currently read characters to the label variable
+        		{
+        			if (line[i] != ':')
+        				name += line[i];	//add the current character to the label string
+        			if (name == "START")	//if we read the 'START:' flag, we set the started boolean to true and reset the label string then move on to the next character.
+        			{
+        				started = true;
+        				name = "";
+        				continue;
+        			}
+        			else if (name == "END")	//Same as above for the end.
+        			{
+        				ended = true;
+        				name = "";
+        				continue;
+        			}
+        			else
+        				continue;
+        		}
+        		else if (readValue == false)	
+        		{
+        			if(line[i] != ':')
+        				value += line[i];
+        			if (value == "VAR")	
+        			{
+        				value = "";
+        				continue;
+        			}
+        			else
+        				continue;
+        		}
+	        }
+	    }
+
+	    for (int i = 0; i < (int)firstBuffer.size(); i++)
+	    {
+	    	if(name == firstBuffer.at(i))
+	    		isValidInstruction = true;
+	    }
+
+	   	//cout << "Value!!!: " << value << "  name!!!: " << name << endl;
+
+       	if (name != "" && value != "" && ended == true )	
+       	{
+       		lines++;
+       		
+       		cout << "Value: " << value << "  name: " << name << endl;
+       		string convertedValue = convertToBinary(value);
+       		temp.push_back(convertedValue);
+			
+			cout << "New variable " << name << " was found, converted to binary code and stored in the table." << endl;
+			Operand newOperand;	
+			newOperand.name = name;
+			newOperand.value = convertedValue;
+			newOperand.lineNum = lines;
+			operandTable.push_back(newOperand);
+		}
+		if (started == false && ended == false && name == "VAR" && value != "")
 		{
+			varsBeforeStart++;
+			cout << "Value no name : " << value << "  name: " << name << endl;
+			string convertedValue = convertToBinary(value);
+			temp.push_back(convertedValue);
+		}
+		if (started == false && ended == false && name != "VAR" && value != "")	
+       	{
+       		//lines++;
+       		cout << "Value name before: " << value << "  name: " << name << endl;
+       		string convertedValue = convertToBinary(value);
+       		temp.push_back(convertedValue);
+			
+			Operand newOperand;	
+			newOperand.name = name;
+			newOperand.value = convertedValue;
+			newOperand.lineNum = varsBeforeStart;
+			operandTable.push_back(newOperand);
+			varsBeforeStart++;
+		}
+		if (name != "VAR" && isValidInstruction == true && name != "" && value == "")
+		{
+			cout << "VAR must have a valid value." << endl;
+			return false;
+		}
+
+	}
+	file.close();
+	return true;
+}
+
+bool convertToMachineCode()
+{
+	bool valid = false;
+
+	for(int i = 0; i < varsBeforeStart; i++)
+		outputBuffer.push_back(temp.at(i));	//pushes every variable declared before main program to output buffer
+
+	for (int i = 0; i < (int)symbolTable.size(); i++)
+	{
+		valid = false;
+		string stringMaster = "";
+		//cout << "symbol table address: " << symbolTable.at(i).address << endl;
+		if (symbolTable.at(i).address == "")
+		{
+			cout << symbolTable.at(i).label  << " address is empty." << endl;
 			for (int a = 0; a < 13; a++)
 				stringMaster += "0";
 		}
-		else 	//If an address is given, we need to convert that to binary
+		else 
 		{
-			for(int j = 0; j < (int)operandTable.size(); j++) //checks the address matches a valid variable and adds it to stringMaster
+			for(int j = 0; j < (int)operandTable.size(); j++)
 			{
 				if (symbolTable.at(i).address == operandTable.at(j).name)
+				{					
 					stringMaster = stringMaster + convertToBinary2(operandTable.at(j).lineNum);
+					valid = true;
+					cout << symbolTable.at(i).label << " address was found and matched with a variable." << endl;
+				}
+			}
+			if (valid == false)
+			{
+				cout << "Sorry, cannot find the variable at address " << symbolTable.at(i).address << "." << endl;
+				return false;
 			}
 		}
-		int chars = (int)firstBuffer.at(count).size();	//We get the size in bits of the instruction
-		stringMaster = stringMaster + firstBuffer.at(count) + addZeros(19,chars);	//Then add it to the output buffer with the right amount of 0s
+		int chars = (int)firstBuffer.at(count).size();
+		stringMaster = stringMaster + firstBuffer.at(count) + addZeros(19,chars);
 		outputBuffer.push_back(stringMaster);
+		cout << "New line in the output buffer was created." << endl;
 		count++;
 	}
-	for (int i = varsBeforeStart; i < (int)temp.size(); i++)	//Now just push each final variable at the end of the code to the output buffer
+
+	for (int i = varsBeforeStart; i < (int)temp.size(); i++)
 		outputBuffer.push_back(temp.at(i));
+	return true;
 }
 
 string addZeros(int amount, int chars)
@@ -312,7 +431,8 @@ string addZeros(int amount, int chars)
 	return returnString;
 }
 
-string convertToBinary2(int number)	//converts the input number to 13 bit binary through a looping division by 2
+//for line number
+string convertToBinary2(int number)
 {
 	int binaryNumber[13];
 	string result; 
@@ -337,7 +457,8 @@ string convertToBinary2(int number)	//converts the input number to 13 bit binary
     return result;
 }
 
-string convertToBinary(string num)	//converts the input number to 32 bit binary through a looping division by 2
+//only for variables
+string convertToBinary(string num)
 {
     int binaryNumber[32];
     string result;
@@ -355,10 +476,14 @@ string convertToBinary(string num)	//converts the input number to 32 bit binary 
         i++;
         elements++;
     }
+
+    //for example, if we have a number 1025, its binary code is 10000000001, but we need 32 digits
 	for (int a = elements; a < 32; a++)
     	binaryNumber[a] = 0;
+    
     for (int j = 0; j < 32; j++) 
     	result = result + to_string(binaryNumber[j]);
+
     return result;
 }
 
@@ -375,21 +500,21 @@ void display()
 	for (int i = 0; i < (int)firstBuffer.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
 	{
 		cout << "Set: " << firstBuffer.at(i) << endl;
-	}
+	}*/
 	
 	for (int i = 0; i < (int)operandTable.size(); i++)
 	{
 		cout << "Var name: " << operandTable.at(i).name << endl;
 		cout << "Var value: " << operandTable.at(i).value << endl;
 		cout << "Var line: " << operandTable.at(i).lineNum << endl;
-	}*/
-
-	for (int i = 0; i < (int)outputBuffer.size(); i++)
+	}
+	
+	/*for (int i = 0; i < (int)outputBuffer.size(); i++)
 	{
 		cout << outputBuffer.at(i) << endl;
 	}
 
-	/*for (int i = 0; i < (int)temp.size(); i++)
+	for (int i = 0; i < (int)temp.size(); i++)
 	{
 		cout << temp.at(i) << endl;
 	}*/
@@ -397,8 +522,19 @@ void display()
 
 void printToFile()
 {
-	ofstream out (outputFile);
-	for (int i = 0; i < (int)outputBuffer.size(); i++)
-		out << outputBuffer.at(i) << endl;
-	out.close();
+	if(outputBuffer.size() > 32)
+	{
+		cout << "ERROR!" << endl;
+		cout << "The Machine code produced from the Assembly Code source file was too long!" << endl;
+		cout << "Please ensure your source code is 32 lines long or less" << endl;
+	}
+	else
+	{
+		ofstream out (outputFile);
+		for (int i = 0; i < (int)outputBuffer.size(); i++)
+			out << outputBuffer.at(i) << endl;
+		cout << "Machine code printed to output.txt successfully." << endl;
+		out.close();
+	}
+	
 }
