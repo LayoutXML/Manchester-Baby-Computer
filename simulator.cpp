@@ -43,8 +43,6 @@ int main() {
 	if (input == "Y" || input == "y") {
 		isStepByStep = true;
 	}
-    cout << CI << endl;
-    cout << memory.size() << endl;
 	while (CI < 31 && CI < (int)memory.size() - 1) {
 		CI++;
 		fetch();
@@ -197,6 +195,7 @@ void displayMemoryLine(array<bool, 32> memoryLine) {
         }
         cout << " ";
     }
+    cout << "Value: " << binaryToDecimalArray(memoryLine);
 }
 
 // Executing operations
@@ -255,4 +254,3 @@ void execute() {
 	        break;
     }
 }
-
