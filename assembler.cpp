@@ -40,7 +40,6 @@ bool finishFirstPass = false;		//Boolean to mark when the first pass has ended
 bool ending = false;
 int lines = 0; 						//counts the lines in the assembly program code
 int count = 0;
-int wordCount = 0;
 int varsBeforeStart = 0;			//counts the amount of variables declared before the start (usually 1)
 
 //functions
@@ -140,7 +139,6 @@ bool firstPass()
         	address = "";
         	readLabel = false;
         	readAddress = false;
-        	wordCount = 0;
 
         	for (int i = 0; i < (int)line.length(); i++)	//for each character in the line
         	{
@@ -151,14 +149,12 @@ bool firstPass()
 	        		if (label != "")	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
 	        		{
 	        			readLabel = true;
-	        			label = "";
-	        			wordCount++;
+	        			//label = "";
 	        		}
 	        		else if (address != "")	//if the address variable for this line isn't empty (contains an address), we have already read the address os we set its boolean to true
 	        		{
 	        			readAddress = true;
-	        			address = "";
-	        			wordCount++;
+	        			//address = "";
 	        		}
 	        		else 
 	        			continue;	//otherwise if we read a space but already have a label and address, we just continue until we reach the end line character.
@@ -172,7 +168,6 @@ bool firstPass()
 	        			if (label == "START:")	//if we read the 'START:' flag, we set the started boolean to true and reset the label string then move on to the next character.
 	        			{
 	        				cout << "Label START was found in the code." << endl;
-	        				wordCount++;
 	        				started = true;
 	        				label = "";
 	        				continue;
@@ -180,7 +175,6 @@ bool firstPass()
 	        			else if (label == "END:")	//Same as above for the end.
 	        			{
 	        				cout << "Label END was found in the code." << endl;
-	        				wordCount++;
 	        				ended = true;
 	        				label = "";
 	        				continue;
@@ -190,13 +184,6 @@ bool firstPass()
 	        			address += line[i];
 	        	}
 
-	        	//cout << "	First Pass Word Count: " << wordCount << endl;
-
-	        	if(wordCount > 3)
-	        	{
-	        		cout << "Error! There are too many arguments given in one of the assembly program lines."<< endl;
-	        		return false;
-	        	}
 	        }
 	        //At this point, we should have a label and address to save to the Symbol table
 	       	if (label != "" && started == true)	// If we have information ready to save and we're still in the program section for the first pass
@@ -211,7 +198,7 @@ bool firstPass()
 	       	if (started == true && ended == true)	//If we have reached the end section of the program, we break out of the loop. This is the end of the first pass.
 	       		break;
 
-	       	//cout << endl;
+	       	cout << endl;
 	    }
 	    if((started == false && ended == true) || (started == true && ended == false) || (started == false && ended == false))
 	    {
@@ -300,7 +287,6 @@ bool secondPass()
     	readName = false;
     	readValue = false;
     	isValidInstruction = false;
-    	wordCount = 0;
 
     	for (int i = 0; i < (int)line.length(); i++)	//for each character in the line
     	{
@@ -311,12 +297,10 @@ bool secondPass()
         		if (name != "")	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
         		{
         			readName = true;
-        			wordCount++;
         		}
         		else if (value != "")	//if the address variable for this line isn't empty (contains an address), we have already read the address os we set its boolean to true
         		{
         			readValue = true;
-        			wordCount++;
         		}
         		else 
         			continue;	//otherwise if we read a space but already have a label and address, we just continue until we reach the end line character.
@@ -329,14 +313,12 @@ bool secondPass()
         				name += line[i];	//add the current character to the label string
         			if (name == "START")	//if we read the 'START:' flag, we set the started boolean to true and reset the label string then move on to the next character.
         			{
-        				//wordCount++;
         				started = true;
         				name = "";
         				continue;
         			}
         			else if (name == "END")	//Same as above for the end.
         			{
-        				//wordCount++;
         				ended = true;
         				ending = true;
         				name = "";
@@ -358,28 +340,25 @@ bool secondPass()
         				continue;
         		}
 	        }
-	        // cout << "		Second Pass Word Count: " << wordCount << endl;
-
-	        // if(wordCount > 3)
-        	// {
-        	// 	cout << "Error! There are too many arguments given in one of the assembly program lines."<< endl;
-        	// 	//return false;
-        	// }
 	    }
 
-	    for (int i = 0; i < (int)firstBuffer.size(); i++)
+	    for (int i = 0; i < (int)symbolTable.size(); i++)
 	    {
-	    	if(name == firstBuffer.at(i))
-	    		isValidInstruction = true;
+	    	cout << "Symbol test: " << symbolTable.at(i).label << endl;
+	    		if(name == symbolTable.at(i).label)
+	    		{
+	    			cout << "TEST 2 " << endl;
+	    			isValidInstruction = true;
+	    		}
 	    }
 
-	   	cout << "Value!!!: " << value << "  name!!!: " << name << endl;
+	   	//cout << "Value!!!: " << value << "  name!!!: " << name << endl;
 
        	if (name != "" && value != "" && ended == true && ending == false )	
        	{
        		lines++;
        		
-       		cout << "Value: " << value << "  name: " << name << endl;
+       		//cout << "Value: " << value << "  name: " << name << endl;
        		string convertedValue = convertToBinary(value);	//ERROR OCCURS HERE
        		temp.push_back(convertedValue);
 			
@@ -393,14 +372,14 @@ bool secondPass()
 		if (started == false && ended == false && name == "VAR" && value != "")
 		{
 			varsBeforeStart++;
-			cout << "Value no name : " << value << "  name: " << name << endl;
+			//cout << "Value no name : " << value << "  name: " << name << endl;
 			string convertedValue = convertToBinary(value);
 			temp.push_back(convertedValue);
 		}
 		if (started == false && ended == false && name != "VAR" && value != "")	
        	{
        		//lines++;
-       		cout << "Value name before: " << value << "  name: " << name << endl;
+       		//cout << "Value name before: " << value << "  name: " << name << endl;
        		string convertedValue = convertToBinary(value);
        		temp.push_back(convertedValue);
 			
@@ -411,7 +390,7 @@ bool secondPass()
 			operandTable.push_back(newOperand);
 			varsBeforeStart++;
 		}
-		if (name != "VAR" && name != "STP" && name != "JMP" && name != "" && value == "")
+		if (name != "VAR" && isValidInstruction == false && name != "" && value == "")
 		{
 			cout << "The variable " << name << " needs to have a valid value." << endl;
 			return false;
@@ -419,7 +398,7 @@ bool secondPass()
 		if(ending)
 			ending = false;
 
-		//cout << endl;
+		cout << endl;
 	}
 	file.close();
 	return true;
@@ -538,35 +517,35 @@ string convertToBinary(string num)
 
 void display()
 {
-	for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
-	{
-		cout << "Label: " << symbolTable.at(i).label << endl;
-		cout << "Address: " << symbolTable.at(i).address << endl;
-	}
+	// for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
+	// {
+	// 	cout << "Label: " << symbolTable.at(i).label << endl;
+	// 	cout << "Address: " << symbolTable.at(i).address << endl;
+	// }
 	
-	cout << "Lines: " << lines << endl;
+	// cout << "Lines: " << lines << endl;
 	
-	for (int i = 0; i < (int)firstBuffer.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
-	{
-		cout << "Set: " << firstBuffer.at(i) << endl;
-	}
+	// for (int i = 0; i < (int)firstBuffer.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
+	// {
+	// 	cout << "Set: " << firstBuffer.at(i) << endl;
+	// }
 	
-	for (int i = 0; i < (int)operandTable.size(); i++)
-	{
-		cout << "Var name: " << operandTable.at(i).name << endl;
-		cout << "Var value: " << operandTable.at(i).value << endl;
-		cout << "Var line: " << operandTable.at(i).lineNum << endl;
-	}
+	// for (int i = 0; i < (int)operandTable.size(); i++)
+	// {
+	// 	cout << "Var name: " << operandTable.at(i).name << endl;
+	// 	cout << "Var value: " << operandTable.at(i).value << endl;
+	// 	cout << "Var line: " << operandTable.at(i).lineNum << endl;
+	// }
 	
-	for (int i = 0; i < (int)outputBuffer.size(); i++)
-	{
-		cout << outputBuffer.at(i) << endl;
-	}
+	// for (int i = 0; i < (int)outputBuffer.size(); i++)
+	// {
+	// 	cout << outputBuffer.at(i) << endl;
+	// }
 
-	for (int i = 0; i < (int)temp.size(); i++)
-	{
-		cout << temp.at(i) << endl;
-	}
+	// for (int i = 0; i < (int)temp.size(); i++)
+	// {
+	// 	cout << temp.at(i) << endl;
+	// }
 }
 
 void printToFile()
