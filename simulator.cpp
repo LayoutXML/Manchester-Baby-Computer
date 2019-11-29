@@ -79,11 +79,11 @@ void decode() {
 	vector<bool> opcodeBinary;
 	int i = 0;
     // Get binary format of operand
-	for (i; i < 13; i++) {
+	for (; i < 13; i++) {
 		operandBinary.push_back(PI[i]);
 	}
     // Get binary format of opcode
-	for (i; i < 17; i++) {
+	for (; i < 17; i++) {
 		opcodeBinary.push_back(PI[i]);
 	}
 	operand = binaryToDecimal(operandBinary);
@@ -143,7 +143,7 @@ void readFile() {
         // error opening file
         cout << "File error" << endl;
     }
-    while(getline(file, line) && memory.size() < 32) {
+    while(getline(file, line)) {
         cout << line << endl;
         if (line.size() >= 32) {
             // convert string to bool array
@@ -169,8 +169,6 @@ void readFile() {
 
 // Displaying memory, CI, PI and accumulator
 void display() {
-    char trueChar = '1';
-    char falseChar = '0';
     cout << endl;
     // Display memory
     cout << "Memory:" << endl;
