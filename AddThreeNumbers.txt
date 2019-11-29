@@ -1,0 +1,15 @@
+; PROGRAM WHICH DO ADD THREE NUMBERS
+	VAR 0       ; Declare empty 32-bit variable to pad space at the start
+START: 	LDN NUM03   ; Copy negated variable to accumulator
+	SUB NUM04   ; Subtract variable from accumulator
+	SUB NUM05   ; Subtract variable from accumulator
+	STO SUM01   ; Store accumulator value sum variable
+; Then we negate the stored answer
+	LDN SUM01   ; Copy negated sum variable to accumulator
+        STO SUM01   ; Store accumulator to sum variable
+END:	STP	    ; Stop operations
+; Variable declarations
+NUM03:  VAR 302     ; Declare 32-bit variable
+NUM04:  VAR 64      ; Declare 32-bit variable
+NUM05: 	VAR 171     ; Declare 32-bit variable
+SUM01:  VAR 0 	    ; Declare 32-bit variable

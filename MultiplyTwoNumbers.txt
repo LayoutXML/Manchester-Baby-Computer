@@ -1,0 +1,8 @@
+	 VAR 0      ; Pad space at the start
+START: 	 LDP NUM03  ; Load positive variable into the accumulator
+	 MTP NUM04  ; Multiply NUM03 by NUM04
+	 STO SUM01  ; Save the answer in the sum variable
+END:	 STP	    ; Stops executing
+NUM03:   VAR 755    ; Declaring a new multiplicand variable
+NUM04:   VAR 521    ; New multiplicand variable
+SUM01:   VAR 0      ; Sum variable declaration
