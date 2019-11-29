@@ -1,7 +1,7 @@
 /*
 	Names: Calum Logan, Emilija Budryte, Rokas Jankunas, Jokubas Butkus, & Momchil Badzhev
 	simulator.cpp written by: Rokas Jankunas, Jokubas Butkus, & Momchil Badzhev
-	Matriculation Numbers: 180013466, ###ADD MATRICULATION NUMBERS
+	Matriculation Numbers: 180013466, 180017115, 180003228, 180017346, 180012872
 	Module Code: AC21009
 */
 
@@ -35,7 +35,11 @@ int operand = 0;
 bool stop = false;
 bool isStepByStep = false;
 
-int main() {
+int main(int argc, char *argv[]) {
+	if (argc == 2) {
+		filename = argv[1];
+		cout << "Filename set to " << filename << endl;
+	}
 	readFile();
 	cout << "Go step by step? [Y/n]" << endl;
 	string input;
@@ -53,8 +57,11 @@ int main() {
 			return 0;
 		}
 		if (isStepByStep) {
-			cout << "Enter anything to go to the next step" << endl;
+			cout << "Enter anything to go to the next step or STOP to stop" << endl;
 			cin >> input;
+			if (input == "STOP") {
+				return 0;
+			}
 		}
 	}
 	return 0;
@@ -136,7 +143,7 @@ void readFile() {
         // error opening file
         cout << "File error" << endl;
     }
-    while(getline(file, line) && memory.size() <= 32) {
+    while(getline(file, line) && memory.size() < 32) {
         cout << line << endl;
         if (line.size() >= 32) {
             // convert string to bool array
@@ -153,6 +160,10 @@ void readFile() {
             memory.push_back(memoryLine);
         }
     }
+    array<bool, 32> empty = {0};
+    while (memory.size() < 32) {
+    	memory.push_back(empty);
+    }
     file.close();
 }
 
@@ -165,7 +176,7 @@ void display() {
     cout << "Memory:" << endl;
     for (size_t i = 0; i < memory.size(); i++) {
         // Display number of the memory line
-        cout << i << ": ";
+        cout << i << ":\t ";
         displayMemoryLine(memory[i]);
         cout << endl;
     }
