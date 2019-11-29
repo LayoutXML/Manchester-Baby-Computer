@@ -37,8 +37,10 @@ string outputFile = "output.txt";	//Machine code (binary) text file is produced
 bool started = false;				//Boolean to flag the START: keyword for the first pass
 bool ended = false;					//Boolean to flag the END: keyword for the first pass
 bool finishFirstPass = false;		//Boolean to mark when the first pass has ended
+bool ending = false;
 int lines = 0; 						//counts the lines in the assembly program code
 int count = 0;
+int wordCount = 0;
 int varsBeforeStart = 0;			//counts the amount of variables declared before the start (usually 1)
 
 //functions
@@ -62,7 +64,8 @@ int main()
 	cout << "1. AddTwoNo.txt " << endl;
 	cout << "2. AddThreeNo.txt" << endl;
 	cout << "3. Multiply2No.txt" << endl;
-	cout << "4. Enter your file name." << endl;
+	cout << "4. Fibonacci.txt" << endl;
+	cout << "5. Enter your file name." << endl;
 	cout << "0. Exit." << endl;
 	cout << "-------------------------------------------------------" << endl;
 	cin >> choice;
@@ -79,6 +82,9 @@ int main()
 			inputFile = "Multiply2No.txt";
 			break;
 		case 4:
+			inputFile = "Fibonacci.txt";
+			break;
+		case 5:
 			cin >> fn;
 			inputFile = fn;
 			break;
@@ -134,6 +140,7 @@ bool firstPass()
         	address = "";
         	readLabel = false;
         	readAddress = false;
+        	wordCount = 0;
 
         	for (int i = 0; i < (int)line.length(); i++)	//for each character in the line
         	{
@@ -142,9 +149,17 @@ bool firstPass()
 	        	if (line[i] == ' ' || line[i] == '\t')	//if we read a space:
 	        	{ 
 	        		if (label != "")	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
+	        		{
 	        			readLabel = true;
-	        		if (address != "")	//if the address variable for this line isn't empty (contains an address), we have already read the address os we set its boolean to true
+	        			label = "";
+	        			wordCount++;
+	        		}
+	        		else if (address != "")	//if the address variable for this line isn't empty (contains an address), we have already read the address os we set its boolean to true
+	        		{
 	        			readAddress = true;
+	        			address = "";
+	        			wordCount++;
+	        		}
 	        		else 
 	        			continue;	//otherwise if we read a space but already have a label and address, we just continue until we reach the end line character.
 	        	}
@@ -157,6 +172,7 @@ bool firstPass()
 	        			if (label == "START:")	//if we read the 'START:' flag, we set the started boolean to true and reset the label string then move on to the next character.
 	        			{
 	        				cout << "Label START was found in the code." << endl;
+	        				wordCount++;
 	        				started = true;
 	        				label = "";
 	        				continue;
@@ -164,6 +180,7 @@ bool firstPass()
 	        			else if (label == "END:")	//Same as above for the end.
 	        			{
 	        				cout << "Label END was found in the code." << endl;
+	        				wordCount++;
 	        				ended = true;
 	        				label = "";
 	        				continue;
@@ -171,6 +188,14 @@ bool firstPass()
 	        		}
 	        		else if (readAddress == false)	// if we haven't read an address and haven't reached the end of the program, we add currently read characters to the address variable
 	        			address += line[i];
+	        	}
+
+	        	//cout << "	First Pass Word Count: " << wordCount << endl;
+
+	        	if(wordCount > 3)
+	        	{
+	        		cout << "Error! There are too many arguments given in one of the assembly program lines."<< endl;
+	        		return false;
 	        	}
 	        }
 	        //At this point, we should have a label and address to save to the Symbol table
@@ -185,6 +210,8 @@ bool firstPass()
 
 	       	if (started == true && ended == true)	//If we have reached the end section of the program, we break out of the loop. This is the end of the first pass.
 	       		break;
+
+	       	//cout << endl;
 	    }
 	    if((started == false && ended == true) || (started == true && ended == false) || (started == false && ended == false))
 	    {
@@ -253,12 +280,13 @@ bool secondPass()
 {
 	ended = false;
 	started = false;
+	ending = false;
 	
 	ifstream file (inputFile);
 	
 	bool readName;
    	bool readValue;
-   	//bool isValidInstruction = false;
+   	bool isValidInstruction = false;
 	
 	string name;
 	string value;
@@ -271,6 +299,8 @@ bool secondPass()
 		value = "";
     	readName = false;
     	readValue = false;
+    	isValidInstruction = false;
+    	wordCount = 0;
 
     	for (int i = 0; i < (int)line.length(); i++)	//for each character in the line
     	{
@@ -278,10 +308,16 @@ bool secondPass()
         		break;
         	if (line[i] == ' ' || line[i] == '\t')	//if we read a space:
         	{
-        		if (name != "" )	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
+        		if (name != "")	//if the label variable for this line isn't empty (contains a label), we have already read the label so we set its boolean to true
+        		{
         			readName = true;
-        		if (value != "")	//if the address variable for this line isn't empty (contains an address), we have already read the address os we set its boolean to true
-        			readValue = true ;
+        			wordCount++;
+        		}
+        		else if (value != "")	//if the address variable for this line isn't empty (contains an address), we have already read the address os we set its boolean to true
+        		{
+        			readValue = true;
+        			wordCount++;
+        		}
         		else 
         			continue;	//otherwise if we read a space but already have a label and address, we just continue until we reach the end line character.
         	}
@@ -293,13 +329,16 @@ bool secondPass()
         				name += line[i];	//add the current character to the label string
         			if (name == "START")	//if we read the 'START:' flag, we set the started boolean to true and reset the label string then move on to the next character.
         			{
+        				//wordCount++;
         				started = true;
         				name = "";
         				continue;
         			}
         			else if (name == "END")	//Same as above for the end.
         			{
+        				//wordCount++;
         				ended = true;
+        				ending = true;
         				name = "";
         				continue;
         			}
@@ -319,22 +358,29 @@ bool secondPass()
         				continue;
         		}
 	        }
+	        // cout << "		Second Pass Word Count: " << wordCount << endl;
+
+	        // if(wordCount > 3)
+        	// {
+        	// 	cout << "Error! There are too many arguments given in one of the assembly program lines."<< endl;
+        	// 	//return false;
+        	// }
 	    }
 
-	    // for (int i = 0; i < (int)firstBuffer.size(); i++)
-	    // {
-	    // 	if(name == firstBuffer.at(i))
-	    // 		isValidInstruction = true;
-	    // }
+	    for (int i = 0; i < (int)firstBuffer.size(); i++)
+	    {
+	    	if(name == firstBuffer.at(i))
+	    		isValidInstruction = true;
+	    }
 
-	   	//cout << "Value!!!: " << value << "  name!!!: " << name << endl;
+	   	cout << "Value!!!: " << value << "  name!!!: " << name << endl;
 
-       	if (name != "" && value != "" && ended == true )	
+       	if (name != "" && value != "" && ended == true && ending == false )	
        	{
        		lines++;
        		
        		cout << "Value: " << value << "  name: " << name << endl;
-       		string convertedValue = convertToBinary(value);
+       		string convertedValue = convertToBinary(value);	//ERROR OCCURS HERE
        		temp.push_back(convertedValue);
 			
 			cout << "New variable " << name << " was found, converted to binary code and stored in the table." << endl;
@@ -367,10 +413,13 @@ bool secondPass()
 		}
 		if (name != "VAR" && name != "STP" && name != "JMP" && name != "" && value == "")
 		{
-			cout << "VAR must have a valid value." << endl;
+			cout << "The variable " << name << " needs to have a valid value." << endl;
 			return false;
 		}
+		if(ending)
+			ending = false;
 
+		//cout << endl;
 	}
 	file.close();
 	return true;
@@ -387,7 +436,7 @@ bool convertToMachineCode()
 	{
 		valid = false;
 		string stringMaster = "";
-		//cout << "symbol table address: " << symbolTable.at(i).address << endl;
+		cout << "symbol table address: " << symbolTable.at(i).address << endl;
 		if (symbolTable.at(i).address == "")
 		{
 			cout << symbolTable.at(i).label  << " address is empty." << endl;
@@ -489,7 +538,7 @@ string convertToBinary(string num)
 
 void display()
 {
-	/*for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
+	for (int i = 0; i < (int)symbolTable.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
 	{
 		cout << "Label: " << symbolTable.at(i).label << endl;
 		cout << "Address: " << symbolTable.at(i).address << endl;
@@ -500,7 +549,7 @@ void display()
 	for (int i = 0; i < (int)firstBuffer.size(); i++)	//For each Symbol in the symbol table, print its lavel and address
 	{
 		cout << "Set: " << firstBuffer.at(i) << endl;
-	}*/
+	}
 	
 	for (int i = 0; i < (int)operandTable.size(); i++)
 	{
@@ -509,7 +558,7 @@ void display()
 		cout << "Var line: " << operandTable.at(i).lineNum << endl;
 	}
 	
-	/*for (int i = 0; i < (int)outputBuffer.size(); i++)
+	for (int i = 0; i < (int)outputBuffer.size(); i++)
 	{
 		cout << outputBuffer.at(i) << endl;
 	}
@@ -517,18 +566,18 @@ void display()
 	for (int i = 0; i < (int)temp.size(); i++)
 	{
 		cout << temp.at(i) << endl;
-	}*/
+	}
 }
 
 void printToFile()
 {
-	if(outputBuffer.size() > 32)
+	if(outputBuffer.size() > 32)	//If the output buffer is more than 32 lines long, it won't work in the simulator so prints an error and never saves to file
 	{
 		cout << "ERROR!" << endl;
 		cout << "The Machine code produced from the Assembly Code source file was too long!" << endl;
 		cout << "Please ensure your source code is 32 lines long or less" << endl;
 	}
-	else
+	else 	//Saves the contents of the output buffer to file
 	{
 		ofstream out (outputFile);
 		for (int i = 0; i < (int)outputBuffer.size(); i++)
