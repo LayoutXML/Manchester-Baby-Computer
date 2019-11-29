@@ -83,7 +83,7 @@ void decode() {
 		operandBinary.push_back(PI[i]);
 	}
     // Get binary format of opcode
-	for (i; i < 16; i++) {
+	for (i; i < 17; i++) {
 		opcodeBinary.push_back(PI[i]);
 	}
 	operand = binaryToDecimal(operandBinary);
